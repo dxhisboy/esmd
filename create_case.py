@@ -42,15 +42,20 @@ try:
     logger.info("linking src to case")
     os.symlink(os.path.join(esmdroot, "src"), os.path.join(os.path.join(caseroot, "src")), True)
 
-    env_build = os.path.join(os.path.join(caseroot, "env_build.json"))
-    build_vars = {'MACRO' : 'gcc_arch', "USER_CPPDEFS" : ""}
-    if os.path.exists(env_build):
-        logger.info("env_build.json exists, loading")
-        build_vars.update(json.load(open(env_build)))
+    logger.info("considering case.json")
+    caseconf = os.path.join(os.path.join(caseroot, "case.json"))
+    case_vars = {'MACRO' : 'gcc_arch', "USER_CPPDEFS" : ""}
+    if os.path.exists(caseconf):
+        logger.info("case.json exists, loading")
+        case_vars.update(json.load(open(caseconf)))
     if args.compiler:
-        build_vars['MACRO'] = 'gcc_arch'
+        case_vars['MACRO'] = 'gcc_arch'
     if args.user_cppdefs:
-        build_vars['USER_CPPDEFS'] += args.user_cppdefs
-    json.dump(build_vars, open(env_build, "w"))
+        case_vars['USER_CPPDEFS'] += args.user_cppdefs
+
+    logger.info("writing case.json...")
+    output = open(caseconf, "w")
+    json.dump(case_vars, output, indent=2)
+    output.write("\n")
 except Exception as e:
     logger.exception(e)
