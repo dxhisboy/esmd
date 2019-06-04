@@ -1,0 +1,3 @@
+INCLUDES=-Isrc -I/usr/include/libiberty
+CFLAGS=-O2 -std=gnu99 $(INCLUDES)
+CC=gcc

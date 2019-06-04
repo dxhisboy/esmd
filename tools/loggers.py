@@ -5,11 +5,11 @@ BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(30, 38)
 COLOR_SEQ = "\033[1;%dm%s\033[0m"
 
 COLOR_LEVEL_NAME = {
-    'WARNING': COLOR_SEQ % (YELLOW, 'WARNING'),
+    'WARNING': COLOR_SEQ % (YELLOW, 'WARN'),
     'INFO': COLOR_SEQ % (GREEN, 'INFO'),
-    'DEBUG': COLOR_SEQ % (CYAN, 'DEBUG'),
-    'CRITICAL': COLOR_SEQ % (MAGENTA, 'CRITICAL'),
-    'ERROR': COLOR_SEQ % (RED, 'ERROR'),
+    'DEBUG': COLOR_SEQ % (CYAN, 'DBG '),
+    'CRITICAL': COLOR_SEQ % (MAGENTA, 'CRIT'),
+    'ERROR': COLOR_SEQ % (RED, 'ERR '),
 }
 
 class ColoredFormatter(logging.Formatter):
@@ -22,8 +22,8 @@ class ColoredFormatter(logging.Formatter):
         record.levelname = levelname
         return ret
 
-fformat = logging.Formatter('%(asctime)s - %(name)s:%(levelname)s - %(message)s')
-cformat = ColoredFormatter('%(asctime)s - %(name)s:%(levelname)s - %(message)s')
+fformat = logging.Formatter('%(asctime)s %(levelname)s:%(name)-16s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+cformat = ColoredFormatter('%(asctime)s %(levelname)s:%(name)-16s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
 def add_file(name, logfile):
     logger = logging.getLogger(None)
@@ -34,7 +34,7 @@ def add_file(name, logfile):
 
 def init_root_logger():
     logger = logging.getLogger(None)
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)
     ch = logging.StreamHandler()
     ch.setLevel(logging.DEBUG)
     ch.setFormatter(cformat)

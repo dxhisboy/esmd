@@ -1,5 +1,7 @@
 import re
 import os
+import json
+import time
 INCLUDE_RE = re.compile('\\s*#include\\s*((<(?P<sysinc>.*)>)|("(?P<usrinc>.*)"))')
 src_suffix = set([".c", ".h"])
 
@@ -32,8 +34,8 @@ def find_includes(f, incmap, srcpath):
                 find_includes(inc_full, incmap, srcpath)
                 incmap[f].update(incmap[inc_full])
 
-def gen_incmap(srcpath):
-    incmap = {}
+def gen_incmap(srcpath, initial={}):
+    incmap = dict(initial.items())
 
     for path in srcpath:
         for f in os.listdir(path):
@@ -49,12 +51,22 @@ def export_dep(incmap, target_name = target_name):
             ret.append("%s: %s" % (obj, " ".join(v)))
     return os.linesep.join(ret)
 
-# print(export_dep(gen_incmap(["../src"])))
-# gen_dep(["../src"])
-# for f in os.listdir("../src"):
-#     find_includes(os.path.join("../src", f), incmap, srcpath)
-# print(incmap)
-# for k, v in incmap.items():
-#     obj = target_name(k)
-#     if obj is not None:
-#         print("%s: %s" % (obj, " ".join(v)))
+def save_incmap(incmap, path):
+    incmap_encodable = dict(map(lambda k: (k[0], list(k[1])), incmap.items()))
+    record = {"stamp": time.time(), "map": incmap_encodable}
+    #encode = json.JSONEncoder().encode(record)
+    #open(path, 'w').write(str(encode))
+    json.dump(record, open(path, 'w'))
+def check_existing_incmap(path, srcpath):
+    if not os.path.exists(path):
+        return {}
+    encode = open(path, 'r').read()
+    record = json.JSONDecoder().decode(encode)
+    stamp = record["stamp"]
+    incmap_orig = record["map"]
+    incmap_new = {}
+    for k in incmap_orig:
+        if find_file(k, srcpath):
+            if os.stat(k).st_mtime < stamp:
+                incmap_new[k] = list(incmap_orig[k])
+    return incmap_new
