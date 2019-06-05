@@ -20,10 +20,10 @@ class LoggerPipe(threading.Thread):
         for line in iter(self.pin.readline, ''):
             self.logger.log(self.level, line.rstrip())
         self.pin.close()
+    def join(self):
+        super().join()
     def close(self):
         os.close(self.pipe[1])
-
-
 def run(cmd, shell=False):
     logger.debug("executing: %s" % cmd)
     sublogger = loggers.get(cmd[0])
@@ -33,6 +33,8 @@ def run(cmd, shell=False):
     p.wait()
     errpipe.close()
     outpipe.close()
+    errpipe.join()
+    outpipe.join()
     # output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=shell)
     # logger.debug("========command output========\n%s" % output.decode().rstrip())
     # logger.debug("==========end output==========")

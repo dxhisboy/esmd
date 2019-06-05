@@ -10,6 +10,8 @@ sys.path.append(toolroot)
 
 import loggers
 import shell
+import vc
+
 parser = argparse.ArgumentParser(description='Create a new case with specified name')
 parser.add_argument("casename", action="store", help="Name of case", type=str)
 parser.add_argument("-p", "--proto", action="store", default=os.path.join(toolroot, "case.proto"), 
@@ -37,7 +39,9 @@ try:
     protogitdir = os.path.join(args.proto, "SourceMods", ".git")
     if not os.path.exists(protogitdir):
         logger.info("prototype case has no SourceMods git, initializing...")
-        shell.run(["git", "init", os.path.join(caseroot, "SourceMods")], shell=False)
+        #shell.run(["git", "init", os.path.join(caseroot, "SourceMods")], shell=False)
+        vc.git_init(os.path.join(caseroot, "SourceMods"))
+        vc.git_init(os.path.join(caseroot, "SourceMods"), ".dirty-git")
     else:
         logger.info("copying SourceMods git to %s" % casegitdir)
         shutil.copytree(protogitdir, casegitdir, copy_function=shutil.copy)
