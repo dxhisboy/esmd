@@ -14,10 +14,12 @@ parser = argparse.ArgumentParser(description='Create a new case with specified n
 parser.add_argument("casename", action="store", help="Name of case", type=str)
 parser.add_argument("-p", "--proto", action="store", default=os.path.join(toolroot, "case.proto"), 
                     help="Create case as a copy of prototype case")
-parser.add_argument("-c", "--compiler", action="store", default=None,
-                    help="Compiler settings to use for the case")
+parser.add_argument("-P", "--platform", action="store", default=None,
+                    help="Platform for the case")
 parser.add_argument("-D", "--user-cppdefs", action="store", default="",
                     help="User defined preprocessing variables")
+parser.add_argument("-R", "--keep-root", action="store", default="",
+                    help="Keep root the same as prototype case")
 args = parser.parse_args(sys.argv[1:])
 args.proto = os.path.abspath(args.proto)
 casesdir = os.path.join(esmdroot, "cases")
@@ -44,15 +46,17 @@ try:
 
     logger.info("considering case.json")
     caseconf = os.path.join(os.path.join(caseroot, "case.json"))
-    case_vars = {'MACRO' : 'gcc_arch', "USER_CPPDEFS" : ""}
+    case_vars = {'PLATFORM' : 'gcc_arch', "USER_CPPDEFS" : ""}
     if os.path.exists(caseconf):
         logger.info("case.json exists, loading")
         case_vars.update(json.load(open(caseconf)))
-    if args.compiler:
-        case_vars['MACRO'] = 'gcc_arch'
+    if args.platform:
+        case_vars['PLATFORM'] = 'gcc_arch'
     if args.user_cppdefs:
         case_vars['USER_CPPDEFS'] += args.user_cppdefs
-
+    if not args.keep_root:
+        case_vars['ESMDROOT'] = esmdroot
+        case_vars['TOOLROOT'] = toolroot
     logger.info("writing case.json...")
     output = open(caseconf, "w")
     json.dump(case_vars, output, indent=2)

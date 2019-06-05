@@ -1,5 +1,5 @@
 import logging
-import uuid
+#import uuid
 BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(30, 38)
 
 COLOR_SEQ = "\033[1;%dm%s\033[0m"
@@ -22,11 +22,11 @@ class ColoredFormatter(logging.Formatter):
         record.levelname = levelname
         return ret
 
-fformat = logging.Formatter('%(asctime)s %(levelname)s:%(name)-16s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+fformat = logging.Formatter('%(asctime)s %(levelname)8s:%(name)-16s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 cformat = ColoredFormatter('%(asctime)s %(levelname)s:%(name)-16s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
-def add_file(name, logfile):
-    logger = logging.getLogger(None)
+def add_file(logfile, name = None):
+    logger = logging.getLogger(name)
     fh = logging.FileHandler(logfile)
     fh.setLevel(logging.DEBUG)
     fh.setFormatter(fformat)

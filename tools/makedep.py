@@ -7,7 +7,8 @@ src_suffix = set([".c", ".h"])
 
 def target_name(f):
     if f.endswith(".c"):
-        return os.path.basename(f) + ".o"
+        base = os.path.basename(f)
+        return os.path.splitext(base)[0] + ".o"
     return None
 
 def find_file(f, srcpath):
@@ -22,7 +23,7 @@ def find_includes(f, incmap, srcpath):
     if f in incmap:
         return
     incmap[f] = set([])
-    for line in open(f):
+    for line in open(find_file(f, srcpath)):
         m = INCLUDE_RE.match(line)
         if m:
             groups = m.groupdict()
@@ -30,9 +31,9 @@ def find_includes(f, incmap, srcpath):
             inc_full = find_file(inc, srcpath)
 
             if inc_full:
-                incmap[f].add(inc_full)
-                find_includes(inc_full, incmap, srcpath)
-                incmap[f].update(incmap[inc_full])
+                incmap[f].add(inc)
+                find_includes(inc, incmap, srcpath)
+                incmap[f].update(incmap[inc])
 
 def gen_incmap(srcpath, initial={}):
     incmap = dict(initial.items())
@@ -43,13 +44,18 @@ def gen_incmap(srcpath, initial={}):
             find_includes(f_full, incmap, srcpath)
     return incmap
 
-def export_dep(incmap, target_name = target_name):
-    ret = []
+def export_deps(incmap, target_name = target_name, objvar = "OBJS"):
+    deps = []
+    objs = []
     for k, v in incmap.items():
         obj = target_name(k)
         if obj is not None:
-            ret.append("%s: %s" % (obj, " ".join(v)))
-    return os.linesep.join(ret)
+            deps.append("%s: %s" % (obj, " ".join(v)))
+            objs.append(obj)
+    objline = ""
+    if objvar:
+        objline = "%s=%s\n" % (objvar, " ".join(objs))
+    return objline + os.linesep.join(deps)
 
 def save_incmap(incmap, path):
     incmap_encodable = dict(map(lambda k: (k[0], list(k[1])), incmap.items()))
