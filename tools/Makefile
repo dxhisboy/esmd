@@ -1,10 +1,9 @@
-all: $(BLDDIR)/esmd
+all: $(BLDDIR)/obj/esmd
 
 SRC_INC=$(subst :, -I, :$(VPATH))
 include Depends
-include $(TOOLROOT)/Macros/Macros.$(PLATFORM)
+include $(TOOLROOT)/platforms/Macros.$(PLATFORM)
 
-$(BLDDIR)/esmd: $(HISTDIR)/esmd.$(LID)
-	cp $< $@
-$(HISTDIR)/esmd.$(LID): esmd
-	cp $< $@
+.PHONY: clean
+clean:
+	-rm -f $(OBJS) $(BLDDIR)/esmd

@@ -24,18 +24,29 @@ class LoggerPipe(threading.Thread):
         super().join()
     def close(self):
         os.close(self.pipe[1])
-def run(cmd, shell=False):
-    logger.debug("executing: %s" % cmd)
-    sublogger = loggers.get(cmd[0])
-    errpipe = LoggerPipe(sublogger, logging.WARNING)
-    outpipe = LoggerPipe(sublogger, logging.INFO)
-    p = subprocess.Popen(cmd, stdout = outpipe, stderr = errpipe)
-    p.wait()
-    errpipe.close()
-    outpipe.close()
-    errpipe.join()
-    outpipe.join()
+def run(cmd, shell=False, capture=False, quiet=False, text=True):
+    if not quiet:
+        logger.debug("executing: %s" % cmd)
+    p = None
+    if not capture:
+        if not quiet:
+            sublogger = loggers.get(cmd[0])
+            errpipe = LoggerPipe(sublogger, logging.WARNING)
+            outpipe = LoggerPipe(sublogger, logging.DEBUG)
+        else:
+            errpipe = subprocess.DEVNULL
+            outpipe = subprocess.DEVNULL
+        
+        p = subprocess.run(cmd, stdout = outpipe, stderr = errpipe, text=text, universal_newlines=True)
+        if not quiet:
+            errpipe.close()
+            outpipe.close()
+            errpipe.join()
+            outpipe.join()
+    else:
+        p = subprocess.run(cmd, capture_output=True)
+    return p
     # output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=shell)
     # logger.debug("========command output========\n%s" % output.decode().rstrip())
     # logger.debug("==========end output==========")
-    
+     
