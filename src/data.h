@@ -1,7 +1,7 @@
 #ifndef DATA_H_
 #define DATA_H_
 
-#include <camd_config.h>
+#include <cppdefs.h>
 typedef AREAL areal;
 typedef IREAL ireal;
 
@@ -51,12 +51,12 @@ typedef struct pair_conf {
 } pair_conf_t;
 #include <memory.h>
 
-typedef struct camd {
+typedef struct esmd {
   mempool_t force_pool;
   pair_conf_t pair_conf;
   box_t box;
 
-} camd_t;
+} esmd_t;
 
 
 #endif

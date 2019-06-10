@@ -19,11 +19,11 @@ typedef struct meminfo {
 static htab_t htab;
 memrec_t htab_mr = {"memory hashtab", 0, 0};
 mempool_t rec_pool;
-extern void *camd_malloc(size_t, char*);
+extern void *esmd_malloc(size_t, char*);
 void mempool_init(mempool_t *pool, int block_size, int num_blocks, char *name) {
   pool->block_size = block_size;
-  pool->buffer = camd_malloc(block_size * num_blocks, name);
-  pool->free_list = camd_malloc(sizeof(int) * num_blocks, name);
+  pool->buffer = esmd_malloc(block_size * num_blocks, name);
+  pool->free_list = esmd_malloc(sizeof(int) * num_blocks, name);
   pool->free_count = num_blocks;
 
   for (int i = 0; i < num_blocks; i ++){
@@ -53,8 +53,8 @@ void mempool_return(mempool_t *pool, void *ptr) {
 }
 
 void mempool_destroy(mempool_t *pool) {
-  camd_free(pool->free_list);
-  camd_free(pool->buffer);
+  esmd_free(pool->free_list);
+  esmd_free(pool->buffer);
 }
 
 static int mr_eq(const void *e1, const void *e2) {
@@ -76,7 +76,7 @@ static int mr_print_trav(void **mrpp, void *help){
   return 1;
 }
 
-static void *camd_aligned_malloc(size_t size){
+static void *esmd_aligned_malloc(size_t size){
   long raw = (long)malloc(size + sizeof(meminfo_t) + MEMORY_ALIGN_MASK);
   void *ret = (void*)((raw + sizeof(meminfo_t) + MEMORY_ALIGN_MASK) & ~MEMORY_ALIGN_MASK);
   meminfo_t *info = ret - sizeof(meminfo_t);
@@ -86,36 +86,36 @@ static void *camd_aligned_malloc(size_t size){
   return ret;
 }
 
-static void camd_aligned_free(void *ptr){
+static void esmd_aligned_free(void *ptr){
   meminfo_t *info = ptr - sizeof(meminfo_t);
   free(info->raw);
 }
-static void *camd_htab_calloc(size_t size, size_t count){
+static void *esmd_htab_calloc(size_t size, size_t count){
   htab_mr.size += size * count;
   htab_mr.cnt += 1;
-  void *ret = camd_aligned_malloc(size * count);
+  void *ret = esmd_aligned_malloc(size * count);
   memset(ret, 0, size * count);
   return ret;
 }
 
-static void camd_htab_free(void *ptr){
+static void esmd_htab_free(void *ptr){
   meminfo_t *info = ptr - sizeof(meminfo_t);
   htab_mr.size -= info->size;
   htab_mr.cnt --;
-  camd_aligned_free(ptr);
+  esmd_aligned_free(ptr);
 }
 
 void memory_init(){
-  htab = htab_create_alloc(N_MEMREC, mr_hash, mr_eq, mr_del, camd_htab_calloc, camd_htab_free);
+  htab = htab_create_alloc(N_MEMREC, mr_hash, mr_eq, mr_del, esmd_htab_calloc, esmd_htab_free);
   void **slot = htab_find_slot(htab, &htab_mr, INSERT);
   assert(*slot == NULL);
   *slot = &htab_mr;
 
-  void *rec_buffer = camd_aligned_malloc(sizeof(memrec_t) * N_MEMREC);
+  void *rec_buffer = esmd_aligned_malloc(sizeof(memrec_t) * N_MEMREC);
   meminfo_t *buffer_info = rec_buffer - sizeof(meminfo_t);
   buffer_info->rec = &htab_mr;
   
-  void *rec_list = camd_aligned_malloc(sizeof(int) * N_MEMREC);
+  void *rec_list = esmd_aligned_malloc(sizeof(int) * N_MEMREC);
   meminfo_t *list_info = rec_list - sizeof(meminfo_t);
   list_info->rec = &htab_mr;
   
@@ -128,8 +128,8 @@ void memory_print(){
   htab_traverse(htab, mr_print_trav, NULL);
 }
 
-void *camd_malloc(size_t size, char *name){
-  void *ret = camd_aligned_malloc(size);
+void *esmd_malloc(size_t size, char *name){
+  void *ret = esmd_aligned_malloc(size);
   meminfo_t *info = ret - sizeof(meminfo_t);
   void **slot = htab_find_slot(htab, name, INSERT);
   assert(slot);
@@ -148,11 +148,11 @@ void *camd_malloc(size_t size, char *name){
   }
 }
 
-void camd_free(void *ptr){
+void esmd_free(void *ptr){
   meminfo_t *info = ptr - sizeof(meminfo_t);
   info->rec->size -= info->size;
   info->rec->cnt --;
-  camd_aligned_free(ptr);
+  esmd_aligned_free(ptr);
 }
 
 #ifdef TEST

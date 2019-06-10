@@ -2,13 +2,13 @@
 #include <math.h>
 #include <stdlib.h>
 
-void camd_cell_setup_global(camd_t *camd, areal x, areal y, areal z){
-  box_t *box = &(camd->box);
+void esmd_cell_setup_global(esmd_t *esmd, areal x, areal y, areal z){
+  box_t *box = &(esmd->box);
   box->lglobal[0] = x;
   box->lglobal[1] = y;
   box->lglobal[2] = z;
 
-  ireal lcell = box->lcell = camd->pair_conf.cutoff / (NCELL_CUT + NCELL_SKIN);
+  ireal lcell = box->lcell = esmd->pair_conf.cutoff / (NCELL_CUT + NCELL_SKIN);
   ireal rlcell = box->rlcell = 1 / box->lcell;
   
   box->nglobal[0] = (int)ceil(box->lglobal[0] * rlcell - TINY);
@@ -16,9 +16,9 @@ void camd_cell_setup_global(camd_t *camd, areal x, areal y, areal z){
   box->nglobal[2] = (int)ceil(box->lglobal[2] * rlcell - TINY);
 }
 
-void camd_cell_setup_local(camd_t *camd){
+void esmd_cell_setup_local(esmd_t *esmd){
 
-  box_t *box = &(camd->box);
+  box_t *box = &(esmd->box);
   
   int halo = NCELL_CUT;
 
@@ -30,7 +30,7 @@ void camd_cell_setup_local(camd_t *camd){
   
   cell_t *cells = (cell_t*)malloc(sizeof(cell_data_t) * ncells);
   
-  camd->box.cells = cells;
+  esmd->box.cells = cells;
 
   areal lcell = box->lcell, rlcell = box->rlcell;
 
@@ -38,7 +38,7 @@ void camd_cell_setup_local(camd_t *camd){
     for (int jj = 0; jj < nally; jj ++){
       for (int kk = 0; kk < nallz; kk ++){
         int i = ii - halo, j = jj - halo, k = kk - halo;
-        cell_t *cell = camd->box.cells + (ii * nally + jj) * nallz + kk;
+        cell_t *cell = esmd->box.cells + (ii * nally + jj) * nallz + kk;
         cell->natoms = 0;
         cell->nreplicas = 0;
         cell->bbox_ideal[0][0] = i * lcell;

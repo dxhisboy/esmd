@@ -1,5 +1,5 @@
-#ifndef CONFIG_H_
-#define CONFIG_H_
+#ifndef CPPDEFS_H_
+#define CPPDEFS_H_
 
 //floating point type for accumulating
 #ifndef AREAL
