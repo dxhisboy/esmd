@@ -5,38 +5,39 @@
 typedef AREAL areal;
 typedef IREAL ireal;
 
-typedef struct cell_data {
+typedef struct celldata {
+  int export[CELL_SIZE];  
+  areal v[CELL_SIZE][3];
   areal x[CELL_SIZE][3];
+  int type[CELL_SIZE];
 #ifdef CHARGED
   ireal q[CELL_SIZE];
 #endif
-#ifdef PER_ATOM_MASS
-  ireal m[CELL_SIZE];
-#endif
-  int type[CELL_SIZE];
-  int export[CELL_SIZE];
-} cell_data_t;
+} celldata_t;
 
-typedef struct cell_force {
+#define CELL_DATA_XTQ_SIZE (sizeof(celldata_t) - ((celldata_t *)NULL).x)
+
+typedef struct cellforce {
   areal f[CELL_SIZE][3];
-} cell_force_t;
+} cellforce_t;
 
 typedef struct cell {
   areal bbox_ideal[2][3], bbox_real[2][3];
   areal trans[3];
   int natoms;
   int nreplicas;
-  cell_force_t **replicas;
-  cell_data_t *data;
+  cellforce_t **replicas;
+  celldata_t *data;
 } cell_t;
 
 typedef struct box {
   int nlocal[3], nall[3], nglobal[3];
   int offset[3];
   areal lcell, rlcell;
-  areal lglobal[3], llocal[3], lall[3];
-  areal olocal[3], oall[3];
+  areal lglobal[3]; //, llocal[3], lall[3];
+  //areal olocal[3], oall[3];
   cell_t *cells;
+  celldata_t *celldata;
 } box_t;
 typedef ireal type_table[MAX_TYPES];
 typedef ireal pair_table[MAX_TYPES][MAX_TYPES];
@@ -49,14 +50,22 @@ typedef struct pair_conf {
     ireal coef6, coef12;
   } lj_param;
 } pair_conf_t;
+
+typedef struct multiproc {
+  int npx, npy, npz;
+  int pidx, pidy, pidz;
+} multiproc_t;
 #include <memory.h>
 
 typedef struct esmd {
   mempool_t force_pool;
   pair_conf_t pair_conf;
   box_t box;
-
+  multiproc_t mpp;
 } esmd_t;
 
+#define get_cell_off(boxptr, i, j, k) ((((i) + NCELL_CUT) * (boxptr)->nall[1] \
+                                        + (j) + NCELL_CUT) * (boxptr)->nall[2] \
+                                       + (k) + NCELL_CUT)
 
 #endif

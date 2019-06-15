@@ -4,6 +4,6 @@ CFLAGS=-O2 -std=gnu99
 CC=gcc
 LD=gcc
 %.o: %.c
-	$(CC) $(SRC_INC) $(INCLUDES) $(CFLAGS) $(USER_CPPDEFS) $< -c -o $@
+	$(CC) $(SRC_INC) $(INCLUDES) $(CFLAGS) $(USER_CPPDEFS) $< -c -o $@ -g
 esmd: $(OBJS)
 	$(LD) $(LDFLAGS) $^ $(LIBS) -o $@

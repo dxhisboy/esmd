@@ -146,6 +146,7 @@ void *esmd_malloc(size_t size, char *name){
     rec->cnt += 1;
     info->rec = rec;
   }
+  return ret;
 }
 
 void esmd_free(void *ptr){
@@ -158,7 +159,6 @@ void esmd_free(void *ptr){
 #ifdef TEST
 int main(){
   memory_init();
-  //mempool_destroy(&(rec_pool));
   memory_print();
 }
 #endif

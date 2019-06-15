@@ -1,4 +1,4 @@
-all: $(BLDDIR)/obj/esmd
+all: esmd
 
 SRC_INC=$(subst :, -I, :$(VPATH))
 include Depends
