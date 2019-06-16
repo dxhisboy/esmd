@@ -13,7 +13,7 @@ void load_raw_x_atoms(esmd_t *md, const char *path){
   size_t count;
 
   box_t *box = &(md->box);
-  double rlcell = box->rlcell;
+  double *rlcell = box->rlcell;
   while ((count = read(fd, buffer, buffer_size)) > 0) {
     int natoms = count / (3 * sizeof(double));
     for (int i = 0; i < natoms; i ++){
@@ -23,9 +23,9 @@ void load_raw_x_atoms(esmd_t *md, const char *path){
       if (buffer[i][0] > box->lglobal[0]) buffer[i][0] -= box->lglobal[0];
       if (buffer[i][1] > box->lglobal[1]) buffer[i][1] -= box->lglobal[1];
       if (buffer[i][2] > box->lglobal[2]) buffer[i][2] -= box->lglobal[2];
-      int cellx = floor(buffer[i][0] * rlcell + TINY);
-      int celly = floor(buffer[i][1] * rlcell + TINY);
-      int cellz = floor(buffer[i][2] * rlcell + TINY);
+      int cellx = floor(buffer[i][0] * rlcell[0] + TINY);
+      int celly = floor(buffer[i][1] * rlcell[1] + TINY);
+      int cellz = floor(buffer[i][2] * rlcell[2] + TINY);
       int celloff = get_cell_off(box, cellx, celly, cellz);
       cell_t *cell = box->cells + celloff;
       celldata_t *celldata = box->celldata + celloff;

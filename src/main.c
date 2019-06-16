@@ -1,6 +1,5 @@
 #include "data.h"
 #include "box.h"
-#include "part.h"
 #include "multiproc.h"
 int main(int argc, char **argv){
   esmd_t md;

@@ -1,3 +1,4 @@
+#include <mpi.h>
 #include <data.h>
 inline void part1d(int n, int np, int pid, int *start, int *count){
   int pncell = n / np;
@@ -21,9 +22,11 @@ void esmd_multiproc_part_cart(esmd_t *md, int npx, int npy, int npz, int pid){
   md->mpp.pidx = pidx;
   md->mpp.pidy = pidy;
   md->mpp.pidz = pidz;
+  md->mpp.pid = pid;
   md->mpp.npx  = npx ;
   md->mpp.npy  = npy ;
   md->mpp.npz  = npz ;
+  md->mpp.np   = npx * npy * npz;
   int stx, cntx, sty, cnty, stz, cntz;
   part1d(box->nglobal[0], npx, pidx, &stx, &cntx);
   part1d(box->nglobal[1], npy, pidy, &sty, &cnty);
@@ -48,3 +51,41 @@ void esmd_multiproc_part_cart(esmd_t *md, int npx, int npy, int npz, int pid){
   box->offset[2] = stz;
 }
 
+inline int proc_3d_to_flat(multiproc_t *mpp, int pidx, int pidy, int pidz){
+  return pidx * mpp->npy * mpp->npz + pidy * mpp->npz + pidz;
+}
+
+inline int check_offset();
+#define TAG_ZN 30
+#define TAG_ZP 31
+#define TAG_YN 20
+#define TAG_YP 21
+#define TAG_XN 10
+#define TAG_XP 11
+void esmd_exchange_cell(esmd_t *md, int fields) {
+  box_t *box = &(md->box);
+  multiproc_t *mpp = &(md->mpp);
+  int *nlocal = box->nlocal;
+  int *nall = box->nall;
+  int buffer_size = max(nall[0] * nall[1], nall[0] * nall[2], nall[1] * nall[2]);
+  int entry_size = esmd_fields_size(fields);
+  void *send_buf = esmd_malloc(buffer_size * entry_size * 2, "exchange_buffer");
+  void *recv_buf = esmd_malloc(buffer_size * entry_size * 2, "exchange_buffer");
+  MPI_Request send_req[2], recv_req[2];
+  MPI_Request send_stat[2], recv_stat[2];
+  size_t ncomm_z = entry_size * box->nloal[0] * box->nlocal[1];
+  for (int i = 0; i < box->nlocal[0]; i ++)
+    for (int j = 0; j < box->nlocal[1]; j ++) {
+      size_t bufoff_n = (i * nlocal[1] + j) * entry_size;
+      size_t bufoff_p = bufoff_l + buffer_size;
+      esmd_export_cell(md, send_buf + bufoff_n, fields, get_cell_off(box, i, j, 0));
+      esmd_export_cell(md, send_buf + bufoff_p, fields, get_cell_off(box, i, j, nlocal[2] - 1));
+    }
+  int proc_zn, proc_zp;
+  proc_zn = (mpp->pidz == 0) ? mpp->npz - 1 : mpp->pidz - 1;
+  proc_zp = (mpp->pidz == mpp->npz - 1) ? 0 : mpp->pidz + 1;
+  MPI_Irecv(recv_buf, ncomm_z, MPI_CHAR, proc_zn, TAG_ZN, mpp->comm, recv_req);
+  MPI_Irecv(recv_buf + buffer_size, ncomm_z, MPI_CHAR, proc_zp, TAG_ZP, mpp->comm, recv_req + 1);
+  MPI_Isend(send_buf, ncomm_z, MPI_CHAR, proc_zn, TAG_ZP, mpp->comm, send_req);
+  MPI_Isend(send_buf + buffer_size, ncomm_z, MPI_CHAR, proc_zn, TAG_ZP, mpp->comm, send_req + 1);
+}

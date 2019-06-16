@@ -2,11 +2,19 @@
 #define DATA_H_
 
 #include <cppdefs.h>
+#include <mpi.h>
 typedef AREAL areal;
 typedef IREAL ireal;
+enum cell_fields {
+  CELL_META = 1,
+  CELL_X = 2,
+  CELL_V = 4,
+  CELL_Q = 8,
+  CELL_T = 16
+};
 
 typedef struct celldata {
-  int export[CELL_SIZE];  
+  areal f[CELL_SIZE][3];
   areal v[CELL_SIZE][3];
   areal x[CELL_SIZE][3];
   int type[CELL_SIZE];
@@ -33,7 +41,7 @@ typedef struct cell {
 typedef struct box {
   int nlocal[3], nall[3], nglobal[3];
   int offset[3];
-  areal lcell, rlcell;
+  areal lcell[3], rlcell[3];
   areal lglobal[3]; //, llocal[3], lall[3];
   //areal olocal[3], oall[3];
   cell_t *cells;
@@ -52,11 +60,12 @@ typedef struct pair_conf {
 } pair_conf_t;
 
 typedef struct multiproc {
-  int npx, npy, npz;
-  int pidx, pidy, pidz;
+  int npx, npy, npz, np;
+  int pidx, pidy, pidz, pid;
+  MPI_Comm comm;
 } multiproc_t;
-#include <memory.h>
 
+#include <memory.h>
 typedef struct esmd {
   mempool_t force_pool;
   pair_conf_t pair_conf;
@@ -64,8 +73,8 @@ typedef struct esmd {
   multiproc_t mpp;
 } esmd_t;
 
+
 #define get_cell_off(boxptr, i, j, k) ((((i) + NCELL_CUT) * (boxptr)->nall[1] \
                                         + (j) + NCELL_CUT) * (boxptr)->nall[2] \
                                        + (k) + NCELL_CUT)
-
 #endif
