@@ -74,18 +74,29 @@ void esmd_exchange_cell(esmd_t *md, int fields) {
   MPI_Request send_req[2], recv_req[2];
   MPI_Request send_stat[2], recv_stat[2];
   size_t ncomm_z = entry_size * box->nloal[0] * box->nlocal[1];
+  MPI_Irecv(recv_buf, ncomm_z, MPI_CHAR, proc_zn, TAG_ZN, mpp->comm, recv_req);
+  MPI_Irecv(recv_buf + buffer_size, ncomm_z, MPI_CHAR, proc_zp, TAG_ZP, mpp->comm, recv_req + 1);
+  
   for (int i = 0; i < box->nlocal[0]; i ++)
     for (int j = 0; j < box->nlocal[1]; j ++) {
       size_t bufoff_n = (i * nlocal[1] + j) * entry_size;
-      size_t bufoff_p = bufoff_l + buffer_size;
+      size_t bufoff_p = bufoff_n + buffer_size;
       esmd_export_cell(md, send_buf + bufoff_n, fields, get_cell_off(box, i, j, 0));
       esmd_export_cell(md, send_buf + bufoff_p, fields, get_cell_off(box, i, j, nlocal[2] - 1));
     }
-  int proc_zn, proc_zp;
-  proc_zn = (mpp->pidz == 0) ? mpp->npz - 1 : mpp->pidz - 1;
-  proc_zp = (mpp->pidz == mpp->npz - 1) ? 0 : mpp->pidz + 1;
-  MPI_Irecv(recv_buf, ncomm_z, MPI_CHAR, proc_zn, TAG_ZN, mpp->comm, recv_req);
-  MPI_Irecv(recv_buf + buffer_size, ncomm_z, MPI_CHAR, proc_zp, TAG_ZP, mpp->comm, recv_req + 1);
+  int procz_zn, procz_zp, proc_zn, proc_zp;
+  procz_zn = (mpp->pidz == 0) ? mpp->npz - 1 : mpp->pidz - 1;
+  procz_zp = (mpp->pidz == mpp->npz - 1) ? 0 : mpp->pidz + 1;
+  proc_zn = procz_zn + (mpp->pidx * mpp->npy + mpp->pidy) * mpp->npz;
+  proc_zp = procz_zp + (mpp->pidx * mpp->npy + mpp->pidy) * mpp->npz;
   MPI_Isend(send_buf, ncomm_z, MPI_CHAR, proc_zn, TAG_ZP, mpp->comm, send_req);
   MPI_Isend(send_buf + buffer_size, ncomm_z, MPI_CHAR, proc_zn, TAG_ZP, mpp->comm, send_req + 1);
+
+  for (int i = 0; i < box->nlocal[0]; i ++)
+    for (int j = 0; j < box->nlocal[0]; j ++){
+      size_t bufoff_n = (i * nlocal[1] + j) * entry_size;
+      size_t bufoff_p = bufoff_n + buffer_size;
+      esmd_import_cell(md, recv_buf + bufoff_n, fields, get_cell_off(box, i, j, -1));
+      esmd_import_cell(md, recv_buf + bufoff_p, fields, get_cell_off(box, i, j, nlocal[2]));
+    }
 }
