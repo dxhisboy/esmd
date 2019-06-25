@@ -98,9 +98,9 @@ void pair_lj_force(esmd_t *md) {
                     ireal r6inv = r2inv * r2inv * r2inv;
                     ireal force = r6inv * (r6inv * c12_i[jtype] - c6_i[jtype]) * r2inv;
                     //if (fabs(force) > maxf) maxf = fabs(force);
-                    if (x == 0 && y == 0 && z == 0 && i == 1){
-                      printf("%.20g %.20g %.20g\n", delx * force, dely * force, delz * force);
-                    }
+                    /* if (x == 0 && y == 0 && z == 0 && i == 1){ */
+                    /*   printf("%.20g %.20g %.20g\n", delx * force, dely * force, delz * force); */
+                    /* } */
                     fi[i][0] -= delx * force;
                     fi[i][1] -= dely * force;
                     fi[i][2] -= delz * force;
