@@ -1,5 +1,7 @@
 #include <mpi.h>
 #include <data.h>
+#include <util.h>
+#include <stdio.h>
 inline void part1d(int n, int np, int pid, int *start, int *count){
   int pncell = n / np;
   int rncell = n % np;
@@ -55,48 +57,140 @@ inline int proc_3d_to_flat(multiproc_t *mpp, int pidx, int pidy, int pidz){
   return pidx * mpp->npy * mpp->npz + pidy * mpp->npz + pidz;
 }
 
-inline int check_offset();
 #define TAG_ZN 30
 #define TAG_ZP 31
 #define TAG_YN 20
 #define TAG_YP 21
 #define TAG_XN 10
 #define TAG_XP 11
+
+static inline int get_neighbor(esmd_t *md, int dx, int dy, int dz, areal *off) {
+  multiproc_t *mpp = &(md->mpp);
+  int neigh_x = mpp->pidx + dx;
+  int neigh_y = mpp->pidy + dy;
+  int neigh_z = mpp->pidz + dz;
+  off[0] = off[1] = off[2] = 0;
+  if (neigh_x < 0) {
+    neigh_x += mpp->npx;
+    off[0] = -md->box.lglobal[0];
+  }
+  if (neigh_x >= mpp->npx) {
+    neigh_x -= mpp->npx;
+    off[0] = md->box.lglobal[0];
+  }
+  if (neigh_y < 0) {
+    neigh_y += mpp->npy;
+    off[1] = -md->box.lglobal[1];
+  }
+  if (neigh_y >= mpp->npy) {
+    neigh_y -= mpp->npy;
+    off[1] = md->box.lglobal[1];
+  }
+  if (neigh_z < 0) {
+    neigh_z += mpp->npz;
+    off[2] = -md->box.lglobal[2];
+  }
+  if (neigh_z >= mpp->npz) {
+    neigh_z -= mpp->npz;
+    off[2] = md->box.lglobal[2];
+  }
+  return (neigh_x * mpp->npy + neigh_y) * mpp->npz + neigh_z;
+}
 void esmd_exchange_cell(esmd_t *md, int fields) {
   box_t *box = &(md->box);
   multiproc_t *mpp = &(md->mpp);
   int *nlocal = box->nlocal;
   int *nall = box->nall;
-  int buffer_size = max(nall[0] * nall[1], nall[0] * nall[2], nall[1] * nall[2]);
-  int entry_size = esmd_fields_size(fields);
-  void *send_buf = esmd_malloc(buffer_size * entry_size * 2, "exchange_buffer");
-  void *recv_buf = esmd_malloc(buffer_size * entry_size * 2, "exchange_buffer");
-  MPI_Request send_req[2], recv_req[2];
-  MPI_Request send_stat[2], recv_stat[2];
-  size_t ncomm_z = entry_size * box->nloal[0] * box->nlocal[1];
-  MPI_Irecv(recv_buf, ncomm_z, MPI_CHAR, proc_zn, TAG_ZN, mpp->comm, recv_req);
-  MPI_Irecv(recv_buf + buffer_size, ncomm_z, MPI_CHAR, proc_zp, TAG_ZP, mpp->comm, recv_req + 1);
+  int buffer_size = max(nall[0] * nall[1], max(nall[0] * nall[2], nall[1] * nall[2])) * NCELL_CUT;
+  size_t entry_size = esmd_fields_size(fields);
+  void *send_buf_n = esmd_malloc(buffer_size * entry_size, "exchange_buffer");
+  void *send_buf_p = esmd_malloc(buffer_size * entry_size, "exchange_buffer");
+  void *recv_buf_n = esmd_malloc(buffer_size * entry_size, "exchange_buffer");
+  void *recv_buf_p = esmd_malloc(buffer_size * entry_size, "exchange_buffer");
   
-  for (int i = 0; i < box->nlocal[0]; i ++)
-    for (int j = 0; j < box->nlocal[1]; j ++) {
-      size_t bufoff_n = (i * nlocal[1] + j) * entry_size;
-      size_t bufoff_p = bufoff_n + buffer_size;
-      esmd_export_cell(md, send_buf + bufoff_n, fields, get_cell_off(box, i, j, 0));
-      esmd_export_cell(md, send_buf + bufoff_p, fields, get_cell_off(box, i, j, nlocal[2] - 1));
-    }
-  int procz_zn, procz_zp, proc_zn, proc_zp;
-  procz_zn = (mpp->pidz == 0) ? mpp->npz - 1 : mpp->pidz - 1;
-  procz_zp = (mpp->pidz == mpp->npz - 1) ? 0 : mpp->pidz + 1;
-  proc_zn = procz_zn + (mpp->pidx * mpp->npy + mpp->pidy) * mpp->npz;
-  proc_zp = procz_zp + (mpp->pidx * mpp->npy + mpp->pidy) * mpp->npz;
-  MPI_Isend(send_buf, ncomm_z, MPI_CHAR, proc_zn, TAG_ZP, mpp->comm, send_req);
-  MPI_Isend(send_buf + buffer_size, ncomm_z, MPI_CHAR, proc_zn, TAG_ZP, mpp->comm, send_req + 1);
+  MPI_Request send_req_n, send_req_p, recv_req_n, recv_req_p;
+  MPI_Status send_stat_n, send_stat_p, recv_stat_n, recv_stat_p;
 
-  for (int i = 0; i < box->nlocal[0]; i ++)
-    for (int j = 0; j < box->nlocal[0]; j ++){
-      size_t bufoff_n = (i * nlocal[1] + j) * entry_size;
-      size_t bufoff_p = bufoff_n + buffer_size;
-      esmd_import_cell(md, recv_buf + bufoff_n, fields, get_cell_off(box, i, j, -1));
-      esmd_import_cell(md, recv_buf + bufoff_p, fields, get_cell_off(box, i, j, nlocal[2]));
-    }
+  areal off_n[3], off_p[3];
+  
+  size_t ncomm_z = entry_size * nlocal[0] * nlocal[1] * NCELL_CUT;
+  int proc_zn = get_neighbor(md, 0, 0, -1, off_n);
+  int proc_zp = get_neighbor(md, 0, 0, 1, off_p);
+
+  printf("%f %f %f\n", off_n[0], off_n[1], off_n[2]);
+  printf("%f %f %f\n", off_p[0], off_p[1], off_p[2]);
+
+  MPI_Irecv(recv_buf_n, ncomm_z, MPI_CHAR, proc_zn, TAG_ZP, mpp->comm, &recv_req_n);
+  MPI_Irecv(recv_buf_p, ncomm_z, MPI_CHAR, proc_zp, TAG_ZN, mpp->comm, &recv_req_p);
+
+  esmd_export_box(md, send_buf_n, fields, 0, 0, 0                    , nlocal[0], nlocal[1], NCELL_CUT);
+  esmd_export_box(md, send_buf_p, fields, 0, 0, nlocal[2] - NCELL_CUT, nlocal[0], nlocal[1], NCELL_CUT);
+
+  MPI_Isend(send_buf_n, ncomm_z, MPI_CHAR, proc_zn, TAG_ZN, mpp->comm, &send_req_n);
+  MPI_Isend(send_buf_p, ncomm_z, MPI_CHAR, proc_zn, TAG_ZP, mpp->comm, &send_req_p);
+  MPI_Wait(&recv_req_n, &recv_stat_n);
+  MPI_Wait(&recv_req_p, &recv_stat_p);
+
+  esmd_import_box(md, recv_buf_n, fields, 0, 0, -NCELL_CUT, nlocal[0], nlocal[1], NCELL_CUT, off_n);
+  esmd_import_box(md, recv_buf_p, fields, 0, 0, nlocal[2] , nlocal[0], nlocal[1], NCELL_CUT, off_p);
+
+  MPI_Wait(&send_req_n, &send_stat_n);
+  MPI_Wait(&send_req_p, &send_stat_p);
+
+  
+  size_t ncomm_y = entry_size * nlocal[0] * NCELL_CUT * nall[2];
+  int proc_yn = get_neighbor(md, 0, -1, 0, off_n);
+  int proc_yp = get_neighbor(md, 0, 1, 0, off_p);
+
+  printf("%f %f %f\n", off_n[0], off_n[1], off_n[2]);
+  printf("%f %f %f\n", off_p[0], off_p[1], off_p[2]);
+
+  MPI_Irecv(recv_buf_n, ncomm_y, MPI_CHAR, proc_yn, TAG_YP, mpp->comm, &recv_req_n);
+  MPI_Irecv(recv_buf_p, ncomm_y, MPI_CHAR, proc_yp, TAG_YN, mpp->comm, &recv_req_p);
+
+  esmd_export_box(md, send_buf_n, fields, 0, 0                    , -NCELL_CUT, nlocal[0], NCELL_CUT, nall[2]);
+  esmd_export_box(md, send_buf_p, fields, 0, nlocal[1] - NCELL_CUT, -NCELL_CUT, nlocal[0], NCELL_CUT, nall[2]);
+
+  MPI_Isend(send_buf_n, ncomm_y, MPI_CHAR, proc_yn, TAG_YN, mpp->comm, &send_req_n);
+  MPI_Isend(send_buf_p, ncomm_y, MPI_CHAR, proc_yp, TAG_YP, mpp->comm, &send_req_p);
+
+  MPI_Wait(&recv_req_n, &recv_stat_n);
+  MPI_Wait(&recv_req_p, &recv_stat_p);
+
+  esmd_import_box(md, recv_buf_n, fields, 0, -NCELL_CUT, -NCELL_CUT, nlocal[0], NCELL_CUT, nall[2], off_n);
+  esmd_import_box(md, recv_buf_p, fields, 0, nlocal[1] , -NCELL_CUT, nlocal[0], NCELL_CUT, nall[2], off_p);
+
+  MPI_Wait(&send_req_n, &send_stat_n);
+  MPI_Wait(&send_req_p, &send_stat_p);
+  
+  size_t ncomm_x = entry_size * NCELL_CUT * nall[1] * nall[2];
+  int proc_xn = get_neighbor(md, -1, 0, 0, off_n);
+  int proc_xp = get_neighbor(md, 1, 0, 0, off_p);
+
+  printf("%f %f %f\n", off_n[0], off_n[1], off_n[2]);
+  printf("%f %f %f\n", off_p[0], off_p[1], off_p[2]);
+
+  MPI_Irecv(recv_buf_n, ncomm_x, MPI_CHAR, proc_xn, TAG_XP, mpp->comm, &recv_req_n);
+  MPI_Irecv(recv_buf_p, ncomm_x, MPI_CHAR, proc_xp, TAG_XN, mpp->comm, &recv_req_p);
+
+  esmd_export_box(md, send_buf_n, fields, 0                    , -NCELL_CUT, -NCELL_CUT, NCELL_CUT, nall[1], nall[2]);
+  esmd_export_box(md, send_buf_p, fields, nlocal[0] - NCELL_CUT, -NCELL_CUT, -NCELL_CUT, NCELL_CUT, nall[1], nall[2]);
+  
+  MPI_Isend(send_buf_n, ncomm_x, MPI_CHAR, proc_xn, TAG_XN, mpp->comm, &send_req_n);
+  MPI_Isend(send_buf_p, ncomm_x, MPI_CHAR, proc_xp, TAG_XP, mpp->comm, &send_req_p);
+
+  MPI_Wait(&recv_req_n, &recv_stat_n);
+  MPI_Wait(&recv_req_p, &recv_stat_p);
+
+  esmd_import_box(md, recv_buf_n, fields, -NCELL_CUT, -NCELL_CUT, -NCELL_CUT, NCELL_CUT, nall[1], nall[2], off_n);
+  esmd_import_box(md, recv_buf_p, fields, nlocal[0] , -NCELL_CUT, -NCELL_CUT, NCELL_CUT, nall[1], nall[2], off_p);
+
+  MPI_Wait(&send_req_n, &send_stat_n);
+  MPI_Wait(&send_req_p, &send_stat_p);
+
+
+  esmd_free(send_buf_n);
+  esmd_free(send_buf_p);
+  esmd_free(recv_buf_n);
+  esmd_free(recv_buf_p);
 }

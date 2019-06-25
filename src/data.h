@@ -10,7 +10,8 @@ enum cell_fields {
   CELL_X = 2,
   CELL_V = 4,
   CELL_Q = 8,
-  CELL_T = 16
+  CELL_T = 16,
+  CELL_F = 32
 };
 
 typedef struct celldata {
@@ -18,9 +19,7 @@ typedef struct celldata {
   areal v[CELL_SIZE][3];
   areal x[CELL_SIZE][3];
   int type[CELL_SIZE];
-#ifdef CHARGED
   ireal q[CELL_SIZE];
-#endif
 } celldata_t;
 
 #define CELL_DATA_XTQ_SIZE (sizeof(celldata_t) - ((celldata_t *)NULL).x)
@@ -30,8 +29,7 @@ typedef struct cellforce {
 } cellforce_t;
 
 typedef struct cell {
-  areal bbox_ideal[2][3], bbox_real[2][3];
-  areal trans[3];
+  areal bbox_ideal[2][3];
   int natoms;
   int nreplicas;
   cellforce_t **replicas;
@@ -52,11 +50,13 @@ typedef ireal pair_table[MAX_TYPES][MAX_TYPES];
 typedef ireal angle_table[MAX_TYPES][MAX_TYPES][MAX_TYPES];
 typedef ireal dihedral_table[MAX_TYPES][MAX_TYPES][MAX_TYPES][MAX_TYPES];
 
+typedef struct lj_param {
+  pair_table c6, c12, cutoff2, ec6, ec12;
+} lj_param_t;
+
 typedef struct pair_conf {
   ireal cutoff;
-  struct {
-    ireal coef6, coef12;
-  } lj_param;
+  lj_param_t lj_param;
 } pair_conf_t;
 
 typedef struct multiproc {

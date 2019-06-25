@@ -23,6 +23,7 @@ void esmd_box_setup_global(esmd_t *md, areal x, areal y, areal z){
   box->rlcell[0] = 1. / box->lcell[0];
   box->rlcell[1] = 1. / box->lcell[1];
   box->rlcell[2] = 1. / box->lcell[2];
+  printf("lcell: %f %f %f\n", box->lcell[0], box->lcell[1], box->lcell[2]);
 }
 
 

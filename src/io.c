@@ -33,8 +33,25 @@ void load_raw_x_atoms(esmd_t *md, const char *path){
       celldata->x[curatom][0] = buffer[i][0];
       celldata->x[curatom][1] = buffer[i][1];
       celldata->x[curatom][2] = buffer[i][2];
+      celldata->type[curatom] = 0;
       cell->natoms ++;
     }
   }
   esmd_free(buffer);
+}
+
+void print_atoms(esmd_t *md){
+  box_t *box = &(md->box);
+  for (int i = -NCELL_CUT; i < box->nlocal[0] + NCELL_CUT; i ++){
+    for (int j = -NCELL_CUT; j < box->nlocal[1] + NCELL_CUT; j ++){
+      for (int k = -NCELL_CUT; k < box->nlocal[2] + NCELL_CUT; k ++){
+        cell_t *cell = box->cells + get_cell_off(box, i, j, k);
+        celldata_t *celldata = box->celldata + get_cell_off(box, i, j, k);
+        printf("%d %d %d\n", i, j, k);
+        for (int p = 0; p < cell->natoms; p ++){
+          printf("%d %d %d %f %f %f\n", i, j, k, celldata->x[p][0], celldata->x[p][1], celldata->x[p][2]);
+        }
+      }
+    }
+  }
 }
