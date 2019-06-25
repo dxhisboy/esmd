@@ -40,16 +40,33 @@ void load_raw_x_atoms(esmd_t *md, const char *path){
   esmd_free(buffer);
 }
 
-void print_atoms(esmd_t *md){
+/* void print_atoms_x(esmd_t *md){ */
+/*   box_t *box = &(md->box); */
+/*   for (int i = -NCELL_CUT; i < box->nlocal[0] + NCELL_CUT; i ++){ */
+/*     for (int j = -NCELL_CUT; j < box->nlocal[1] + NCELL_CUT; j ++){ */
+/*       for (int k = -NCELL_CUT; k < box->nlocal[2] + NCELL_CUT; k ++){ */
+/*         cell_t *cell = box->cells + get_cell_off(box, i, j, k); */
+/*         celldata_t *celldata = box->celldata + get_cell_off(box, i, j, k); */
+/*         printf("%d %d %d\n", i, j, k); */
+/*         for (int p = 0; p < cell->natoms; p ++){ */
+/*           printf("%d %d %d %f %f %f\n", i, j, k, celldata->x[p][0], celldata->x[p][1], celldata->x[p][2]); */
+/*         } */
+/*       } */
+/*     } */
+/*   } */
+/* } */
+
+void print_atoms_f(esmd_t *md){
   box_t *box = &(md->box);
-  for (int i = -NCELL_CUT; i < box->nlocal[0] + NCELL_CUT; i ++){
-    for (int j = -NCELL_CUT; j < box->nlocal[1] + NCELL_CUT; j ++){
-      for (int k = -NCELL_CUT; k < box->nlocal[2] + NCELL_CUT; k ++){
+  for (int i = 0; i < box->nlocal[0]; i ++){
+    for (int j = 0; j < box->nlocal[1]; j ++){
+      for (int k = 0; k < box->nlocal[2]; k ++){
         cell_t *cell = box->cells + get_cell_off(box, i, j, k);
         celldata_t *celldata = box->celldata + get_cell_off(box, i, j, k);
-        printf("%d %d %d\n", i, j, k);
+        //printf("%d %d %d\n", i, j, k);
         for (int p = 0; p < cell->natoms; p ++){
-          printf("%d %d %d %f %f %f\n", i, j, k, celldata->x[p][0], celldata->x[p][1], celldata->x[p][2]);
+          printf("%g %g %g %g %g %g\n", celldata->x[p][0], celldata->x[p][1], celldata->x[p][2], celldata->f[p][0], celldata->f[p][1], celldata->f[p][2]);
+          //printf("%g %g %g\n", celldata->f[p][0], celldata->f[p][1], celldata->f[p][2]);
         }
       }
     }

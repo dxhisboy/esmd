@@ -11,7 +11,7 @@ enum cell_fields {
   CELL_V = 4,
   CELL_Q = 8,
   CELL_T = 16,
-  CELL_F = 32
+  CELL_F = 32,
 };
 
 typedef struct celldata {
@@ -59,9 +59,31 @@ typedef struct pair_conf {
   lj_param_t lj_param;
 } pair_conf_t;
 
+enum integrate_type {
+  FIX_NVE,
+  FIX_NVT,
+  FIX_NPT
+};
+typedef struct integrate_conf {
+  int integrate_type;
+  areal time;
+} integrate_conf;
+
+typedef struct halo {
+  int off[3][2], len[3];
+  int ncells;
+  areal translation[3];
+  void *recv_buf, *send_buf;
+  int neighbor;
+  int send_tag, recv_tag;
+  MPI_Request send_req, recv_req;
+  MPI_Status send_stat, recv_stat;
+} halo_t;
+
 typedef struct multiproc {
   int npx, npy, npz, np;
   int pidx, pidy, pidz, pid;
+  halo_t halo[MAX_COMM];  // axis * prev/next
   MPI_Comm comm;
 } multiproc_t;
 

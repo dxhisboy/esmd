@@ -45,3 +45,5 @@
 
 #define MEMORY_ALIGN (1 << ALIGNP)
 #define MEMORY_ALIGN_MASK ((1 << ALIGNP) - 1)
+
+#define MAX_COMM 27
