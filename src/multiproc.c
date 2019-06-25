@@ -136,46 +136,44 @@ inline int proc_3d_to_flat(multiproc_t *mpp, int pidx, int pidy, int pidz){
 }
 
 
-void esmd_comm_start(esmd_t *md, multiproc_t *mpp, halo_t *halo, int dir, int fields, int flags){
+void esmd_comm_start(esmd_t *md, MPI_Comm comm, halo_t *halo, int dir, int fields, int flags){
   size_t entry_size = esmd_fields_size(fields);
   int neigh = halo->neighbor;
   size_t comm_size = halo->ncells * entry_size;
   
   int off_x = halo->off[0][dir], off_y = halo->off[1][dir], off_z = halo->off[2][dir];
   int len_x = halo->len[0], len_y = halo->len[1], len_z = halo->len[2];
-  //printf("send to %d, box={%d, %d, %d, %d, %d, %d}\n", neigh, off_x, off_y, off_z, len_x, len_y, len_z);
-  MPI_Irecv(halo->recv_buf, comm_size, MPI_CHAR, neigh, halo->recv_tag, mpp->comm, &halo->recv_req);
+
+  MPI_Irecv(halo->recv_buf, comm_size, MPI_CHAR, neigh, halo->recv_tag, comm, &halo->recv_req);
   esmd_export_box(md, halo->send_buf, fields, flags, off_x, off_y, off_z, len_x, len_y, len_z);
-  MPI_Isend(halo->send_buf, comm_size, MPI_CHAR, neigh, halo->send_tag, mpp->comm, &halo->send_req);
+  MPI_Isend(halo->send_buf, comm_size, MPI_CHAR, neigh, halo->send_tag, comm, &halo->send_req);
 }
 
-void esmd_comm_finish(esmd_t *md, multiproc_t *mpp, halo_t *halo, int dir, int fields, int flags){
+void esmd_comm_finish(esmd_t *md, halo_t *halo, int dir, int fields, int flags){
   int off_x = halo->off[0][1 - dir], off_y = halo->off[1][1 - dir], off_z = halo->off[2][1 - dir];
   int len_x = halo->len[0], len_y = halo->len[1], len_z = halo->len[2];
   areal *trans = halo->translation;
-  //printf("recv from %d, box={%d, %d, %d, %d, %d, %d}\n", halo->neighbor, off_x, off_y, off_z, len_x, len_y, len_z);
+
   MPI_Wait(&halo->recv_req, &halo->recv_stat);
   esmd_import_box(md, halo->recv_buf, fields, flags, off_x, off_y, off_z, len_x, len_y, len_z, trans);
   MPI_Wait(&halo->send_req, &halo->send_stat);
 }
 
 void esmd_exchange_cell(esmd_t *md, int direction, int fields, int flags) {
-  box_t *box = &(md->box);
   multiproc_t *mpp = &(md->mpp);
-  int start, end, step;
   if (direction == LOCAL_TO_HALO) {
     for (int i = 4; i >= 0; i -= 2){
-      esmd_comm_start(md, mpp, mpp->halo + i + 0, direction, fields, flags);
-      esmd_comm_start(md, mpp, mpp->halo + i + 1, direction, fields, flags);
-      esmd_comm_finish(md, mpp, mpp->halo + i + 0, direction, fields, flags);
-      esmd_comm_finish(md, mpp, mpp->halo + i + 1, direction, fields, flags);
+      esmd_comm_start(md, mpp->comm, mpp->halo + i + 0, direction, fields, flags);
+      esmd_comm_start(md, mpp->comm, mpp->halo + i + 1, direction, fields, flags);
+      esmd_comm_finish(md, mpp->halo + i + 0, direction, fields, flags);
+      esmd_comm_finish(md, mpp->halo + i + 1, direction, fields, flags);
     }
   } else if (direction == HALO_TO_LOCAL){
     for (int i = 0; i < 6; i += 2){
-      esmd_comm_start(md, mpp, mpp->halo + i + 0, direction, fields, flags);
-      esmd_comm_start(md, mpp, mpp->halo + i + 1, direction, fields, flags);
-      esmd_comm_finish(md, mpp, mpp->halo + i + 0, direction, fields, flags);
-      esmd_comm_finish(md, mpp, mpp->halo + i + 1, direction, fields, flags);
+      esmd_comm_start(md, mpp->comm, mpp->halo + i + 0, direction, fields, flags);
+      esmd_comm_start(md, mpp->comm, mpp->halo + i + 1, direction, fields, flags);
+      esmd_comm_finish(md, mpp->halo + i + 0, direction, fields, flags);
+      esmd_comm_finish(md, mpp->halo + i + 1, direction, fields, flags);
     }
   }
   
