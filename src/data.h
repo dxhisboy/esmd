@@ -12,9 +12,11 @@ enum cell_fields {
   CELL_Q = 8,
   CELL_T = 16,
   CELL_F = 32,
+  CELL_E = 64
 };
 
 typedef struct celldata {
+  int export[CELL_SIZE];
   areal f[CELL_SIZE][3];
   areal v[CELL_SIZE][3];
   areal x[CELL_SIZE][3];
@@ -30,7 +32,7 @@ typedef struct cellforce {
 
 typedef struct cell {
   areal bbox_ideal[2][3];
-  int natoms;
+  int natoms, export_ptr;
   int nreplicas;
   cellforce_t **replicas;
   celldata_t *data;
@@ -57,6 +59,7 @@ typedef struct lj_param {
 typedef struct pair_conf {
   ireal cutoff;
   lj_param_t lj_param;
+  type_table rmass;
 } pair_conf_t;
 
 enum integrate_type {
@@ -65,9 +68,9 @@ enum integrate_type {
   FIX_NPT
 };
 typedef struct integrate_conf {
-  int integrate_type;
-  areal time;
-} integrate_conf;
+  int type;
+  areal dt;
+} integrate_conf_t;
 
 typedef struct halo {
   int off[3][2], len[3];
@@ -91,6 +94,7 @@ typedef struct multiproc {
 typedef struct esmd {
   mempool_t force_pool;
   pair_conf_t pair_conf;
+  integrate_conf_t integrate_conf;
   box_t box;
   multiproc_t mpp;
 } esmd_t;

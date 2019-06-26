@@ -1,0 +1,9 @@
+INCLUDES=-I/usr/include/libiberty
+LIBS=-liberty
+CFLAGS=-O2 -std=gnu99
+CC=mpicc
+LD=mpicc
+%.o: %.c
+	$(CC) $(SRC_INC) $(INCLUDES) $(CFLAGS) $(USER_CPPDEFS) $< -c -o $@ -g
+esmd: $(OBJS)
+	$(LD) $(LDFLAGS) $^ $(LIBS) -o $@

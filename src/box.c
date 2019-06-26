@@ -31,6 +31,7 @@ inline areal min(areal a, areal b) {
   if (a < b) return a;
   return b;
 }
+
 void esmd_box_setup_local(esmd_t *md){
 
   box_t *box = &(md->box);
@@ -66,22 +67,4 @@ void esmd_box_setup_local(esmd_t *md){
       }
     }
   }
-  /* for (int ii = 0; ii < nallx; ii ++) { */
-  /*   for (int jj = 0; jj < nally; jj ++){ */
-  /*     for (int kk = 0; kk < nallz; kk ++){ */
-  /*       int i = ii - halo, j = jj - halo, k = kk - halo; */
-  /*       cell_t *cell = md->box.cells + (ii * nally + jj) * nallz + kk; */
-  /*       cell->natoms = 0; */
-  /*       cell->nreplicas = 0; */
-  /*       cell->bbox_ideal[0][0] = i * lcell; */
-  /*       cell->bbox_ideal[0][1] = j * lcell; */
-  /*       cell->bbox_ideal[0][2] = k * lcell; */
-  /*       cell->bbox_ideal[1][0] = (i + 1) * lcell; */
-  /*       cell->bbox_ideal[1][1] = (j + 1) * lcell; */
-  /*       cell->bbox_ideal[1][2] = (k + 1) * lcell; */
-  /*       cell->data = celldata + (ii * nally + jj) * nallz + kk; */
-  /*     } */
-  /*   } */
-  /* } */
-  
 }

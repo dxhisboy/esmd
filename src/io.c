@@ -40,6 +40,45 @@ void load_raw_x_atoms(esmd_t *md, const char *path){
   esmd_free(buffer);
 }
 
+void load_raw_xv_atoms(esmd_t *md, const char *path){
+  int fd = open(path, O_RDONLY);
+  puts(path);
+  size_t buffer_size = NATOMS_BUF * 6 * sizeof(double);
+  double (*buffer)[6] = esmd_malloc(buffer_size, "load_raw_buffer");
+  size_t count;
+
+  box_t *box = &(md->box);
+  double *rlcell = box->rlcell;
+  while ((count = read(fd, buffer, buffer_size)) > 0) {
+    int natoms = count / (6 * sizeof(double));
+    for (int i = 0; i < natoms; i ++){
+      if (buffer[i][0] < 0) buffer[i][0] += box->lglobal[0];
+      if (buffer[i][1] < 0) buffer[i][1] += box->lglobal[1];
+      if (buffer[i][2] < 0) buffer[i][2] += box->lglobal[2];
+      if (buffer[i][0] > box->lglobal[0]) buffer[i][0] -= box->lglobal[0];
+      if (buffer[i][1] > box->lglobal[1]) buffer[i][1] -= box->lglobal[1];
+      if (buffer[i][2] > box->lglobal[2]) buffer[i][2] -= box->lglobal[2];
+      int cellx = floor(buffer[i][0] * rlcell[0] + TINY);
+      int celly = floor(buffer[i][1] * rlcell[1] + TINY);
+      int cellz = floor(buffer[i][2] * rlcell[2] + TINY);
+      int celloff = get_cell_off(box, cellx, celly, cellz);
+      cell_t *cell = box->cells + celloff;
+      celldata_t *celldata = box->celldata + celloff;
+      int curatom = cell->natoms;
+      celldata->x[curatom][0] = buffer[i][0];
+      celldata->x[curatom][1] = buffer[i][1];
+      celldata->x[curatom][2] = buffer[i][2];
+      celldata->v[curatom][0] = buffer[i][3];
+      celldata->v[curatom][1] = buffer[i][4];
+      celldata->v[curatom][2] = buffer[i][5];
+
+      celldata->type[curatom] = 0;
+      cell->natoms ++;
+    }
+  }
+  esmd_free(buffer);
+}
+
 /* void print_atoms_x(esmd_t *md){ */
 /*   box_t *box = &(md->box); */
 /*   for (int i = -NCELL_CUT; i < box->nlocal[0] + NCELL_CUT; i ++){ */

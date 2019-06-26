@@ -163,17 +163,21 @@ void esmd_exchange_cell(esmd_t *md, int direction, int fields, int flags) {
   multiproc_t *mpp = &(md->mpp);
   if (direction == LOCAL_TO_HALO) {
     for (int i = 4; i >= 0; i -= 2){
+      //printf("%d %d\n", mpp->halo[i + 0].neighbor, mpp->halo[i + 1].neighbor);
       esmd_comm_start(md, mpp->comm, mpp->halo + i + 0, direction, fields, flags);
       esmd_comm_start(md, mpp->comm, mpp->halo + i + 1, direction, fields, flags);
       esmd_comm_finish(md, mpp->halo + i + 0, direction, fields, flags);
       esmd_comm_finish(md, mpp->halo + i + 1, direction, fields, flags);
+      //printf("%d %d\n", mpp->halo[i + 0].neighbor, mpp->halo[i + 1].neighbor);
     }
   } else if (direction == HALO_TO_LOCAL){
     for (int i = 0; i < 6; i += 2){
+      //printf("%d %d\n", mpp->halo[i + 0].neighbor, mpp->halo[i + 1].neighbor);
       esmd_comm_start(md, mpp->comm, mpp->halo + i + 0, direction, fields, flags);
       esmd_comm_start(md, mpp->comm, mpp->halo + i + 1, direction, fields, flags);
       esmd_comm_finish(md, mpp->halo + i + 0, direction, fields, flags);
       esmd_comm_finish(md, mpp->halo + i + 1, direction, fields, flags);
+      //printf("%d %d\n", mpp->halo[i + 0].neighbor, mpp->halo[i + 1].neighbor);
     }
   }
   

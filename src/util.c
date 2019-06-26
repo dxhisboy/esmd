@@ -9,6 +9,7 @@ size_t esmd_fields_size(int fields) {
   add_size(CELL_F, sizeof(areal) * CELL_SIZE * 3);
   add_size(CELL_Q, sizeof(areal) * CELL_SIZE);
   add_size(CELL_T, sizeof(int) * CELL_SIZE);
+  add_size(CELL_E, sizeof(int) * CELL_SIZE);
   return accu_size;
 }
 #define export_field(fcode, fname, size)                                \
@@ -28,6 +29,7 @@ void esmd_export_cell(esmd_t *md, void *target, int fields, int flags, int cello
   export_field(CELL_Q, q, sizeof(areal) * CELL_SIZE);
   export_field(CELL_T, type, sizeof(int) * CELL_SIZE);
   export_field(CELL_F, f, sizeof(areal) * CELL_SIZE * 3);
+  export_field(CELL_E, export, sizeof(int) * CELL_SIZE);
   if ((CELL_F & fields) && (TRANS_INC_F & flags)) {
     memset(md->box.celldata[celloff].f, 0, sizeof(areal) * CELL_SIZE * 3);
   }
@@ -69,9 +71,10 @@ void esmd_import_cell(esmd_t *md, void *source, int fields, int flags, int cello
       import_field(CELL_F, f, sizeof(areal) * CELL_SIZE * 3);
     }
   }
+  import_field(CELL_E, export, sizeof(int) * CELL_SIZE);
   if ((TRANS_ADJ_X & flags) && (CELL_X & fields)) {
     areal (*cellx)[3] = md->box.celldata[celloff].x;
-    for (int i = 0; i < md->box.cells[celloff].natoms; i ++){
+    for (int i = 0; i < CELL_SIZE; i ++){
       cellx[i][0] += off[0];
       cellx[i][1] += off[1];
       cellx[i][2] += off[2];

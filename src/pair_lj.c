@@ -2,10 +2,11 @@
 #include <stdio.h>
 #include <assert.h>
 #include <math.h>
-void pair_lj_setup(esmd_t *md, areal *cutoff, ireal *epsilon, ireal *sigma, int ntypes){
+void pair_lj_setup(esmd_t *md, areal *cutoff, ireal *epsilon, ireal *sigma, ireal *mass, int ntypes){
   assert(ntypes < MAX_TYPES);
   md->pair_conf.cutoff = 0;
   for (int i = 0; i < ntypes; i ++){
+    md->pair_conf.rmass[i] = 1.0 / mass[i];
     for (int j = 0; j < ntypes; j ++){
       ireal sigma2 = sigma[i * ntypes + j] * sigma[i * ntypes + j];
       ireal sigma6 = sigma2 * sigma2 * sigma2;
@@ -27,10 +28,10 @@ void pair_lj_force(esmd_t *md) {
   lj_param_t *lj_param = &(md->pair_conf.lj_param);
   areal evdwl = 0;
   int total_atoms = 0;
-  for (int x = -NCELL_CUT; x < box->nlocal[0] + NCELL_CUT; x ++)
-    for (int y = -NCELL_CUT; y < box->nlocal[1] + NCELL_CUT; y ++)
-      for (int z = -NCELL_CUT; z < box->nlocal[2] + NCELL_CUT; z ++){
-        int self_off = get_cell_off(box, x, y, z);
+  for (int ii = -NCELL_CUT; ii < box->nlocal[0] + NCELL_CUT; ii ++)
+    for (int jj = -NCELL_CUT; jj < box->nlocal[1] + NCELL_CUT; jj ++)
+      for (int kk = -NCELL_CUT; kk < box->nlocal[2] + NCELL_CUT; kk ++){
+        int self_off = get_cell_off(box, ii, jj, kk);
         cell_t *cell_self = box->cells + self_off;
         celldata_t *data_self = box->celldata + self_off;
         areal (*fi)[3] = data_self->f;
@@ -42,16 +43,17 @@ void pair_lj_force(esmd_t *md) {
       }
 
   double maxf = 0;
-  for (int x = 0; x < box->nlocal[0]; x ++)
-    for (int y = 0; y < box->nlocal[1]; y ++)
-      for (int z = 0; z < box->nlocal[2]; z ++){
-        int self_off = get_cell_off(box, x, y, z);
+  int total_int = 0;
+  for (int ii = 0; ii < box->nlocal[0]; ii ++)
+    for (int jj = 0; jj < box->nlocal[1]; jj ++)
+      for (int kk = 0; kk < box->nlocal[2]; kk ++){
+        int self_off = get_cell_off(box, ii, jj, kk);
         cell_t *cell_self = box->cells + self_off;
         celldata_t *data_self = box->celldata + self_off;
         areal (*fi)[3] = data_self->f;
         areal (*xi)[3] = data_self->x;
         int   *ti = data_self->type;
-
+        total_atoms += cell_self->natoms;
         for (int dx = -NCELL_CUT; dx <= 0; dx ++) {
           int dytop = (dx == 0) ? 0 : NCELL_CUT;
           for (int dy = -NCELL_CUT; dy <= dytop; dy ++) {
@@ -60,11 +62,10 @@ void pair_lj_force(esmd_t *md) {
         /* for (int dx = -NCELL_CUT; dx <= NCELL_CUT; dx ++) { */
         /*   for (int dy = -NCELL_CUT; dy <= NCELL_CUT; dy ++) { */
         /*     for (int dz = -NCELL_CUT; dz <= NCELL_CUT; dz ++) { */
-              int neigh_x = dx + x;
-              int neigh_y = dy + y;
-              int neigh_z = dz + z;
-
-              int neigh_off = get_cell_off(box, x + dx, y + dy, z + dz);
+              int neigh_x = dx + ii;
+              int neigh_y = dy + jj;
+              int neigh_z = dz + kk;
+              int neigh_off = get_cell_off(box, ii + dx, jj + dy, kk + dz);
               
               cell_t *cell_neigh = box->cells + neigh_off;
               celldata_t *data_neigh = box->celldata + neigh_off;
@@ -93,7 +94,8 @@ void pair_lj_force(esmd_t *md) {
                   ireal dely = xj[j][1] - xi[i][1];
                   ireal delz = xj[j][2] - xi[i][2];
                   ireal r2 = delx * delx + dely * dely + delz * delz;
-                  if (r2 < cutoff2_i[jtype]) {
+                  if (r2 < cutoff2_i[jtype] - TINY) {
+                    total_int += 2;
                     ireal r2inv = 1.0 / r2;
                     ireal r6inv = r2inv * r2inv * r2inv;
                     ireal force = r6inv * (r6inv * c12_i[jtype] - c6_i[jtype]) * r2inv;
@@ -116,5 +118,5 @@ void pair_lj_force(esmd_t *md) {
           }
         }
       }
-  printf("%f %f\n", evdwl, maxf);
+  printf("%f %d %d\n", evdwl, total_atoms, total_int);
 }
