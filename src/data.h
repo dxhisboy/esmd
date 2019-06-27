@@ -38,6 +38,11 @@ typedef struct cell {
   celldata_t *data;
 } cell_t;
 
+enum cell_commtype {
+  CT_INNER = 0,
+  CT_OUTER = 1,
+  CT_HALO
+};
 typedef struct box {
   int nlocal[3], nall[3], nglobal[3];
   int offset[3];
@@ -46,6 +51,7 @@ typedef struct box {
   //areal olocal[3], oall[3];
   cell_t *cells;
   celldata_t *celldata;
+  int *celltype, *cellowner;
 } box_t;
 typedef ireal type_table[MAX_TYPES];
 typedef ireal pair_table[MAX_TYPES][MAX_TYPES];
@@ -67,6 +73,7 @@ enum integrate_type {
   FIX_NVT,
   FIX_NPT
 };
+
 typedef struct integrate_conf {
   int type;
   areal dt;

@@ -5,6 +5,7 @@
 #include <assert.h>
 
 #include <multiproc.h>
+
 static inline int get_neighbor(esmd_t *md, int dx, int dy, int dz, areal *off) {
   multiproc_t *mpp = &(md->mpp);
   int neigh_x = mpp->pidx + dx;
@@ -75,6 +76,42 @@ static inline void init_halo_ordered(halo_t *halo, esmd_t *md, int dir, int del,
   halo->recv_tag = 100 + dir * 10 - del;
 }
 
+void init_halo_unordered(halo_t *halo, esmd_t *md, int dx, int dy, int dz) {
+  int d[3] = {dx, dy, dz};
+  for (int i = 0; i < 3; i ++) {
+    if (d[i] == 0){
+      halo->off[i][0] = 0;
+      halo->off[i][1] = 0;
+      halo->len[i] = md->box.nlocal[i];
+    } else {
+      halo->off[i][0] = (d[i] == -1) ? 0 : md->box.nlocal[i] - NCELL_CUT;
+      halo->off[i][1] = (d[i] == -1) ? -NCELL_CUT : md->box.nlocal[i];
+      halo->len[i] = NCELL_CUT;
+    }
+  }
+  halo->ncells = halo->len[0] * halo->len[1] * halo->len[2];
+  halo->neighbor = get_neighbor(md, dx, dy, dz, halo->translation);
+  //printf("%d %d %d %d %d %d %d %d\n", dx, dy, dz, halo->neighbor, halo->ncells, halo->len[0], halo->len[1], halo->len[2]);
+  size_t max_entry_size = sizeof(cell_t) + sizeof(celldata_t);
+  halo->send_buf = esmd_malloc(halo->ncells * max_entry_size, "exchange_buffer");
+  halo->recv_buf = esmd_malloc(halo->ncells * max_entry_size, "exchange_buffer");
+  halo->send_tag = 200 + dx * 9 + dy * 3 + dz;
+  halo->recv_tag = 200 - dx * 9 - dy * 3 - dz ;
+    
+}
+
+void init_comm_unordered(esmd_t *md){
+  int nhalo = 0;
+  for (int dx = -1; dx <= 1; dx ++) {
+    for (int dy = -1; dy <= 1; dy ++) {
+      for (int dz = -1; dz <= 1; dz ++) {
+        if (dx == 0 && dy == 0 && dz == 0) continue;
+        init_halo_unordered(md->mpp.halo + nhalo, md, dx, dy, dz);
+        nhalo ++;
+      }
+    }
+  }
+}
 void init_comm_ordered(esmd_t *md){
   int *nall = md->box.nall;
   size_t max_entry_size = sizeof(cell_t) + sizeof(celldata_t);
@@ -128,7 +165,7 @@ void esmd_multiproc_part_cart(esmd_t *md, int npx, int npy, int npz, int pid){
   box->offset[1] = sty;
   box->offset[2] = stz;
 
-  init_comm_ordered(md);
+  init_comm_unordered(md);
 }
 
 inline int proc_3d_to_flat(multiproc_t *mpp, int pidx, int pidy, int pidz){
@@ -160,6 +197,15 @@ void esmd_comm_finish(esmd_t *md, halo_t *halo, int dir, int fields, int flags){
 }
 
 void esmd_exchange_cell(esmd_t *md, int direction, int fields, int flags) {
+  for (int i = 0; i < 26; i ++){
+    //printf("%d\n", md->mpp.halo[i].neighbor);
+    esmd_comm_start(md, md->mpp.comm, md->mpp.halo + i, direction, fields, flags);
+  }
+  for (int i = 0; i < 26; i ++){
+    esmd_comm_finish(md, md->mpp.halo + i, direction, fields, flags);
+  }
+}
+void esmd_exchange_cell_ordered(esmd_t *md, int direction, int fields, int flags) {
   multiproc_t *mpp = &(md->mpp);
   if (direction == LOCAL_TO_HALO) {
     for (int i = 4; i >= 0; i -= 2){

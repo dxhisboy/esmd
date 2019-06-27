@@ -1,7 +1,7 @@
 #include <data.h>
 #include <math.h>
 #include <stdlib.h>
-
+#include <util.h>
 void esmd_box_setup_global(esmd_t *md, areal x, areal y, areal z){
   box_t *box = &(md->box);
   box->lglobal[0] = x;
@@ -27,11 +27,17 @@ void esmd_box_setup_global(esmd_t *md, areal x, areal y, areal z){
 }
 
 
-inline areal min(areal a, areal b) {
-  if (a < b) return a;
-  return b;
-}
+/* inline areal min(areal a, areal b) { */
+/*   if (a < b) return a; */
+/*   return b; */
+/* } */
 
+inline int get_cell_type_1d(int idx, int nlocal){
+  if (idx < 0 || idx >= nlocal) return CT_HALO;
+  if (idx < NCELL_CUT || idx >= nlocal - NCELL_CUT) return CT_OUTER;
+  return CT_INNER;
+
+}
 void esmd_box_setup_local(esmd_t *md){
 
   box_t *box = &(md->box);
@@ -42,15 +48,17 @@ void esmd_box_setup_local(esmd_t *md){
   int ncells = box->nall[0] * box->nall[1] * box->nall[2];
   int nlocalx = box->nlocal[0], nlocaly = box->nlocal[1], nlocalz = box->nlocal[2];
   
-  celldata_t *celldata = (celldata_t*)malloc(sizeof(celldata_t) * ncells);
+  celldata_t *celldata = (celldata_t*)esmd_malloc(sizeof(celldata_t) * ncells, "celldata");
   
-  cell_t *cells = (cell_t*)malloc(sizeof(celldata_t) * ncells);
-  
+  cell_t *cells = (cell_t*)esmd_malloc(sizeof(celldata_t) * ncells, "cellmeta");
+  int *celltype = (int*)esmd_malloc(sizeof(int) * ncells, "celltype");
   box->cells = cells;
   box->celldata = celldata;
+  box->celltype = celltype;
   areal *lcell = box->lcell, *rlcell = box->rlcell;
 
   areal lx = box->lglobal[0], ly = box->lglobal[1], lz = box->lglobal[2];
+
   for (int ii = 0; ii < nlocalx; ii ++) {
     for (int jj = 0; jj < nlocaly; jj ++) {
       for (int kk = 0; kk < nlocalz; kk ++){
@@ -67,4 +75,17 @@ void esmd_box_setup_local(esmd_t *md){
       }
     }
   }
+  for (int ii = -NCELL_CUT; ii < box->nlocal[0] + NCELL_CUT; ii ++){
+    int typex = get_cell_type_1d(ii, box->nlocal[0]);
+    for (int jj = -NCELL_CUT; jj < box->nlocal[1] + NCELL_CUT; jj ++){
+      int typey = get_cell_type_1d(jj, box->nlocal[1]);
+      for (int kk = -NCELL_CUT; kk < box->nlocal[2] + NCELL_CUT; kk ++){
+        int typez = get_cell_type_1d(kk, box->nlocal[2]);
+        int cell_off = get_cell_off(box, ii, jj, kk);
+        celltype[cell_off] = max(typex, max(typey, typez));
+      }
+    }
+  }
+
 }
+
