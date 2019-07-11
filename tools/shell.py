@@ -24,7 +24,7 @@ class LoggerPipe(threading.Thread):
         super().join()
     def close(self):
         os.close(self.pipe[1])
-def run(cmd, shell=False, capture=False, quiet=False, text=True):
+def run(cmd, shell=False, capture=False, quiet=False):
     if not quiet:
         logger.debug("executing: %s" % cmd)
     p = None
@@ -37,7 +37,7 @@ def run(cmd, shell=False, capture=False, quiet=False, text=True):
             errpipe = subprocess.DEVNULL
             outpipe = subprocess.DEVNULL
         
-        p = subprocess.run(cmd, stdout = outpipe, stderr = errpipe, text=text, universal_newlines=True)
+        p = subprocess.run(cmd, stdout = outpipe, stderr = errpipe, universal_newlines=True)
         if not quiet:
             errpipe.close()
             outpipe.close()

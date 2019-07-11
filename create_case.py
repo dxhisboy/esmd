@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import argparse
 import os
 import sys
@@ -41,7 +42,6 @@ try:
         logger.info("prototype case has no SourceMods git, initializing...")
         #shell.run(["git", "init", os.path.join(caseroot, "SourceMods")], shell=False)
         vc.git_init(os.path.join(caseroot, "SourceMods"))
-        vc.git_init(os.path.join(caseroot, "SourceMods"), ".dirty-git")
     else:
         logger.info("copying SourceMods git to %s" % casegitdir)
         shutil.copytree(protogitdir, casegitdir, copy_function=shutil.copy)
