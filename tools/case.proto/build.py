@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import json
 import os
 import sys
@@ -90,6 +90,9 @@ try:
     if ret != 0:
         logger.error("build failed, exitting...")
     else:
-        logger.info("build done")
+        logger.info("done")
+        if args.action == "build":
+            shutil.copy2(os.path.join(objdir, "esmd"), os.path.join(histdir, "esmd-%s" % LID))
+            shutil.copy2(os.path.join(objdir, "esmd"), os.path.join(blddir, "esmd"))
 except Exception as e:
     logger.exception(e)

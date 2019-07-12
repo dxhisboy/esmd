@@ -23,7 +23,7 @@ int main(int argc, char **argv){
   esmd_box_setup_global(&md, lg, lg, lg);
   esmd_multiproc_part_cart(&md, 1, 1, 1, rank);
   esmd_box_setup_local(&md);
-  load_raw_xv_atoms(&md, "/home/xduan/workspace/miniMD/ref/data/xv.bin");
+  load_raw_xv_atoms(&md, "/uni-mainz.de/homes/xiaoduan/miniMD/ref/data/xv.bin");
   //esmd_exchange_cell_local_to_halo(&md, CELL_META | CELL_X | CELL_T, TRANS_ADJ_X);
   //esmd_exchange_cell(&md, LOCAL_TO_HALO, CELL_META | CELL_X | CELL_T, TRANS_ADJ_X);
   esmd_exchange_cell(&md, LOCAL_TO_HALO, CELL_META | CELL_X | CELL_T, TRANS_ADJ_X);
@@ -32,7 +32,8 @@ int main(int argc, char **argv){
   for (int i = 0; i < 10; i ++){
     integrate(&md);
   }
-  
+
+  memory_print();
   MPI_Finalize();
   return 0;
 }

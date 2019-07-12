@@ -2,7 +2,7 @@ all: esmd
 
 SRC_INC=$(subst :, -I, :$(VPATH))
 include Depends
-include $(TOOLROOT)/platforms/Macros.$(PLATFORM)
+include $(CASEROOT)/Macros
 
 .PHONY: clean
 clean:

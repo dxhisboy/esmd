@@ -50,7 +50,7 @@ void esmd_box_setup_local(esmd_t *md){
   
   celldata_t *celldata = (celldata_t*)esmd_malloc(sizeof(celldata_t) * ncells, "celldata");
   
-  cell_t *cells = (cell_t*)esmd_malloc(sizeof(celldata_t) * ncells, "cellmeta");
+  cell_t *cells = (cell_t*)esmd_malloc(sizeof(cell_t) * ncells, "cellmeta");
   int *celltype = (int*)esmd_malloc(sizeof(int) * ncells, "celltype");
   box->cells = cells;
   box->celldata = celldata;

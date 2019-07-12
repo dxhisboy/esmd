@@ -50,17 +50,24 @@ try:
 
     logger.info("considering case.json")
     caseconf = os.path.join(os.path.join(caseroot, "case.json"))
-    case_vars = {'PLATFORM' : 'gcc_arch', "USER_CPPDEFS" : ""}
+    case_vars = {'PLATFORM' : 'openmpi_arch', "USER_CPPDEFS" : ""}
     if os.path.exists(caseconf):
         logger.info("case.json exists, loading")
         case_vars.update(json.load(open(caseconf)))
     if args.platform:
-        case_vars['PLATFORM'] = 'gcc_arch'
+        case_vars['PLATFORM'] = 'openmpi_arch'
     if args.user_cppdefs:
         case_vars['USER_CPPDEFS'] += args.user_cppdefs
     if not args.keep_root:
         case_vars['ESMDROOT'] = esmdroot
         case_vars['TOOLROOT'] = toolroot
+    macros = os.path.join(caseroot, "Macros");
+    platform_macros = os.path.join(toolroot, "platforms", "Macros." + case_vars['PLATFORM'])
+    if not os.path.exists(macros):
+        logger.info("Macros does not exist, copying...")
+        shutil.copy2(platform_macros, macros)
+    else:
+        logger.info("Macros exists, do not overwrite...")
     logger.info("writing case.json...")
     output = open(caseconf, "w")
     json.dump(case_vars, output, indent=2)

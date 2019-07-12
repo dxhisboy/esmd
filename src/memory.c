@@ -2,7 +2,7 @@
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
-#include <hashtab.h>
+//#include <hashtab.h>
 
 #include <data.h>
 typedef struct memrec {
@@ -16,9 +16,21 @@ typedef struct meminfo {
   size_t size;
 } meminfo_t;
 
-static htab_t htab;
-memrec_t htab_mr = {"memory hashtab", 0, 0};
+memrec_t mr_self = {"memory hashtab", 0, 0};
 mempool_t rec_pool;
+
+static void *esmd_htab_calloc(size_t count, size_t size);
+static void esmd_htab_free(void *ptr);
+#define PPH_NAME mr
+#define PPH_TYPE memrec_t
+#define PPH_HASH(x) (pph_hash_string((x)->name))
+#define PPH_EQ(x, y) (!strcmp((x)->name, (y)->name))
+#define PPH_CALLOC esmd_htab_calloc
+#define PPH_FREE esmd_htab_free
+#include "pphash.h"
+
+//static htab_t htab;
+static mr_htab_t mrtab;
 extern void *esmd_malloc(size_t, char*);
 void mempool_init(mempool_t *pool, int block_size, int num_blocks, char *name) {
   pool->block_size = block_size;
@@ -57,23 +69,22 @@ void mempool_destroy(mempool_t *pool) {
   esmd_free(pool->buffer);
 }
 
-static int mr_eq(const void *e1, const void *e2) {
-  const char *r1 = e1, *r2 = e2;
-  return strcmp(r1, r2) == 0;
-}
+/* static int mr_eq(const void *e1, const void *e2) { */
+/*   const char *r1 = e1, *r2 = e2; */
+/*   return strcmp(r1, r2) == 0; */
+/* } */
 
-static hashval_t mr_hash(const void *e) {
-  const char *r = e;
-  return htab_hash_string(r);
-}
+/* static hashval_t mr_hash(const void *e) { */
+/*   const char *r = e; */
+/*   return htab_hash_string(r); */
+/* } */
 
-static void mr_del(void *e){
-}
+/* static void mr_del(void *e){ */
+/* } */
 
-static int mr_print_trav(void **mrpp, void *help){
-  memrec_t *node = *mrpp;
-  printf("%s: %d bytes malloced in %d mallocs\n", node->name, node->size, node->cnt);
-  return 1;
+static void mr_print_trav(memrec_t *mrpp, void *help){
+  memrec_t *node = mrpp;
+  printf("%s: %ld bytes malloced in %ld mallocs\n", node->name, node->size, node->cnt);
 }
 
 static void *esmd_aligned_malloc(size_t size){
@@ -90,9 +101,10 @@ static void esmd_aligned_free(void *ptr){
   meminfo_t *info = ptr - sizeof(meminfo_t);
   free(info->raw);
 }
-static void *esmd_htab_calloc(size_t size, size_t count){
-  htab_mr.size += size * count;
-  htab_mr.cnt += 1;
+
+static void *esmd_htab_calloc(size_t count, size_t size){
+  mr_self.size += size * count;
+  mr_self.cnt += 1;
   void *ret = esmd_aligned_malloc(size * count);
   memset(ret, 0, size * count);
   return ret;
@@ -100,40 +112,44 @@ static void *esmd_htab_calloc(size_t size, size_t count){
 
 static void esmd_htab_free(void *ptr){
   meminfo_t *info = ptr - sizeof(meminfo_t);
-  htab_mr.size -= info->size;
-  htab_mr.cnt --;
+  mr_self.size -= info->size;
+  mr_self.cnt --;
   esmd_aligned_free(ptr);
 }
 
 void memory_init(){
-  htab = htab_create_alloc(N_MEMREC, mr_hash, mr_eq, mr_del, esmd_htab_calloc, esmd_htab_free);
-  void **slot = htab_find_slot(htab, &htab_mr, INSERT);
+  //htab = htab_create_alloc(N_MEMREC, mr_hash, mr_eq, mr_del, esmd_htab_calloc, esmd_htab_free);
+  mr_init(&mrtab, 0);
+  //void **slot = mr_find_slot(mrtab, &mr_self, INSERT);
+  memrec_t **slot = mr_find_slot(&mrtab, &mr_self);
   assert(*slot == NULL);
-  *slot = &htab_mr;
+  *slot = &mr_self;
 
   void *rec_buffer = esmd_aligned_malloc(sizeof(memrec_t) * N_MEMREC);
   meminfo_t *buffer_info = rec_buffer - sizeof(meminfo_t);
-  buffer_info->rec = &htab_mr;
+  buffer_info->rec = &mr_self;
   
   void *rec_list = esmd_aligned_malloc(sizeof(int) * N_MEMREC);
   meminfo_t *list_info = rec_list - sizeof(meminfo_t);
-  list_info->rec = &htab_mr;
+  list_info->rec = &mr_self;
   
   mempool_init_prealloc(&(rec_pool), sizeof(memrec_t), N_MEMREC, rec_buffer, rec_list);
-  htab_mr.size += sizeof(int) * N_MEMREC + sizeof(memrec_t) * N_MEMREC;
-  htab_mr.cnt += 1;
+  mr_self.size += sizeof(int) * N_MEMREC + sizeof(memrec_t) * N_MEMREC;
+  mr_self.cnt += 1;
 }
 
 void memory_print(){
-  htab_traverse(htab, mr_print_trav, NULL);
+  mr_traverse(&mrtab, mr_print_trav, NULL);
 }
 
 void *esmd_malloc(size_t size, char *name){
   void *ret = esmd_aligned_malloc(size);
   meminfo_t *info = ret - sizeof(meminfo_t);
-  void **slot = htab_find_slot(htab, name, INSERT);
+  //void **slot = htab_find_slot(htab, name, INSERT);
+  memrec_t *cast_name = (void*)name;
+  memrec_t **slot = mr_find_slot(&mrtab, cast_name);
   assert(slot);
-  if (*slot == NULL){
+  if (pph_slot_is_empty(slot)){
     memrec_t *rec = mempool_get(&(rec_pool));
     strcpy(rec->name, name);
     rec->size = size;

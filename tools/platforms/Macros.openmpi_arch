@@ -1,5 +1,5 @@
-INCLUDES=-I/usr/include/libiberty
-LIBS=-liberty
+#INCLUDES=-I/usr/include/libiberty
+#LIBS=-liberty
 CFLAGS=-O2 -std=gnu99
 CC=mpicc
 LD=mpicc
