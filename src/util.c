@@ -85,10 +85,9 @@ void esmd_import_cell(esmd_t *md, void *source, int fields, int flags, int cello
 size_t esmd_export_box(esmd_t *md, void *target, int fields, int flags, int xlo, int ylo, int zlo, int xlen, int ylen, int zlen){
   box_t *box = &(md->box);
   size_t entry_size = esmd_fields_size(fields);
-
-  for (int i = xlo; i < xlo + xlen; i ++){
+  for (int k = zlo; k < zlo + zlen; k ++){
     for (int j = ylo; j < ylo + ylen; j ++){
-      for (int k = zlo; k < zlo + zlen; k ++){
+      for (int i = xlo; i < xlo + xlen; i ++){
         int bufoff = (((i - xlo) * ylen + j - ylo) * zlen + k - zlo) * entry_size;
         int celloff = get_cell_off(box, i, j, k);
         esmd_export_cell(md, target + bufoff, fields, flags, celloff);
@@ -101,10 +100,9 @@ size_t esmd_export_box(esmd_t *md, void *target, int fields, int flags, int xlo,
 size_t esmd_import_box(esmd_t *md, void *target, int fields, int flags,  int xlo, int ylo, int zlo, int xlen, int ylen, int zlen, areal *off){
   box_t *box = &(md->box);
   int entry_size = esmd_fields_size(fields);
-
-  for (int i = xlo; i < xlo + xlen; i ++){
+  for (int k = zlo; k < zlo + zlen; k ++){
     for (int j = ylo; j < ylo + ylen; j ++){
-      for (int k = zlo; k < zlo + zlen; k ++){
+      for (int i = xlo; i < xlo + xlen; i ++){
         int bufoff = (((i - xlo) * ylen + j - ylo) * zlen + k - zlo) * entry_size;
         int celloff = get_cell_off(box, i, j, k);
         esmd_import_cell(md, target + bufoff, fields, flags, celloff, off);

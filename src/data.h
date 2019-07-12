@@ -107,7 +107,11 @@ typedef struct esmd {
 } esmd_t;
 
 
-#define get_cell_off(boxptr, i, j, k) ((((i) + NCELL_CUT) * (boxptr)->nall[1] \
-                                        + (j) + NCELL_CUT) * (boxptr)->nall[2] \
-                                       + (k) + NCELL_CUT)
+/* #define get_cell_off(boxptr, i, j, k) ((((i) + NCELL_CUT) * (boxptr)->nall[1] \ */
+/*                                         + (j) + NCELL_CUT) * (boxptr)->nall[2] \ */
+/*                                        + (k) + NCELL_CUT) */
+
+#define get_cell_off(boxptr, i, j, k) ((((k) + NCELL_CUT) * (boxptr)->nall[1] \
+                                        + (j) + NCELL_CUT) * (boxptr)->nall[0] \
+                                       + (i) + NCELL_CUT)
 #endif

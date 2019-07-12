@@ -28,25 +28,27 @@ void pair_lj_force(esmd_t *md) {
   lj_param_t *lj_param = &(md->pair_conf.lj_param);
   areal evdwl = 0;
   int total_atoms = 0;
-  for (int ii = -NCELL_CUT; ii < box->nlocal[0] + NCELL_CUT; ii ++)
-    for (int jj = -NCELL_CUT; jj < box->nlocal[1] + NCELL_CUT; jj ++)
-      for (int kk = -NCELL_CUT; kk < box->nlocal[2] + NCELL_CUT; kk ++){
+  for (int kk = -NCELL_CUT; kk < box->nlocal[2] + NCELL_CUT; kk ++){
+    for (int jj = -NCELL_CUT; jj < box->nlocal[1] + NCELL_CUT; jj ++){
+      for (int ii = -NCELL_CUT; ii < box->nlocal[0] + NCELL_CUT; ii ++){
         int self_off = get_cell_off(box, ii, jj, kk);
-        cell_t *cell_self = box->cells + self_off;
-        celldata_t *data_self = box->celldata + self_off;
-        areal (*fi)[3] = data_self->f;
-        for (int i = 0; i < cell_self->natoms; i ++) {
-          fi[i][0] = 0;
-          fi[i][1] = 0;
-          fi[i][2] = 0;
-        }
+	cell_t *cell_self = box->cells + self_off;
+	celldata_t *data_self = box->celldata + self_off;
+	areal (*fi)[3] = data_self->f;
+	for (int i = 0; i < cell_self->natoms; i ++) {
+	  fi[i][0] = 0;
+	  fi[i][1] = 0;
+	  fi[i][2] = 0;
+	}
       }
+    }
+  }
 
   double maxf = 0;
   int total_int = 0;
-  for (int ii = 0; ii < box->nlocal[0]; ii ++)
-    for (int jj = 0; jj < box->nlocal[1]; jj ++)
-      for (int kk = 0; kk < box->nlocal[2]; kk ++){
+  for (int kk = 0; kk < box->nlocal[2]; kk ++){
+    for (int jj = 0; jj < box->nlocal[1]; jj ++){
+      for (int ii = 0; ii < box->nlocal[0]; ii ++){   
         int self_off = get_cell_off(box, ii, jj, kk);
         cell_t *cell_self = box->cells + self_off;
         celldata_t *data_self = box->celldata + self_off;
@@ -59,9 +61,9 @@ void pair_lj_force(esmd_t *md) {
           for (int dy = -NCELL_CUT; dy <= dytop; dy ++) {
             int dztop = (dx == 0 && dy == 0) ? 0 : NCELL_CUT;
             for (int dz = -NCELL_CUT; dz <= dztop; dz ++) {
-        /* for (int dx = -NCELL_CUT; dx <= NCELL_CUT; dx ++) { */
-        /*   for (int dy = -NCELL_CUT; dy <= NCELL_CUT; dy ++) { */
-        /*     for (int dz = -NCELL_CUT; dz <= NCELL_CUT; dz ++) { */
+	      /* for (int dx = -NCELL_CUT; dx <= NCELL_CUT; dx ++) { */
+	      /*   for (int dy = -NCELL_CUT; dy <= NCELL_CUT; dy ++) { */
+	      /*     for (int dz = -NCELL_CUT; dz <= NCELL_CUT; dz ++) { */
               int neigh_x = dx + ii;
               int neigh_y = dy + jj;
               int neigh_z = dz + kk;
@@ -118,5 +120,7 @@ void pair_lj_force(esmd_t *md) {
           }
         }
       }
+    }
+  }
   printf("%f %d %d\n", evdwl, total_atoms, total_int);
 }

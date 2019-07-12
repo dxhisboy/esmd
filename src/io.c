@@ -97,9 +97,9 @@ void load_raw_xv_atoms(esmd_t *md, const char *path){
 
 void print_atoms_f(esmd_t *md){
   box_t *box = &(md->box);
-  for (int i = 0; i < box->nlocal[0]; i ++){
+  for (int k = 0; k < box->nlocal[2]; k ++){
     for (int j = 0; j < box->nlocal[1]; j ++){
-      for (int k = 0; k < box->nlocal[2]; k ++){
+      for (int i = 0; i < box->nlocal[0]; i ++){
         cell_t *cell = box->cells + get_cell_off(box, i, j, k);
         celldata_t *celldata = box->celldata + get_cell_off(box, i, j, k);
         //printf("%d %d %d\n", i, j, k);

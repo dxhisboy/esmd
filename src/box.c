@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <data.h>
 #include <math.h>
 #include <stdlib.h>
@@ -59,9 +60,9 @@ void esmd_box_setup_local(esmd_t *md){
 
   areal lx = box->lglobal[0], ly = box->lglobal[1], lz = box->lglobal[2];
 
-  for (int ii = 0; ii < nlocalx; ii ++) {
+  for (int kk = 0; kk < nlocalz; kk ++){
     for (int jj = 0; jj < nlocaly; jj ++) {
-      for (int kk = 0; kk < nlocalz; kk ++){
+      for (int ii = 0; ii < nlocalx; ii ++) {
         int cell_off = get_cell_off(box, ii, jj, kk);
         cell_t *cell = box->cells + cell_off;
         cell->natoms = 0;
@@ -75,12 +76,12 @@ void esmd_box_setup_local(esmd_t *md){
       }
     }
   }
-  for (int ii = -NCELL_CUT; ii < box->nlocal[0] + NCELL_CUT; ii ++){
-    int typex = get_cell_type_1d(ii, box->nlocal[0]);
+  for (int kk = -NCELL_CUT; kk < box->nlocal[2] + NCELL_CUT; kk ++){
+    int typez = get_cell_type_1d(kk, box->nlocal[2]);
     for (int jj = -NCELL_CUT; jj < box->nlocal[1] + NCELL_CUT; jj ++){
       int typey = get_cell_type_1d(jj, box->nlocal[1]);
-      for (int kk = -NCELL_CUT; kk < box->nlocal[2] + NCELL_CUT; kk ++){
-        int typez = get_cell_type_1d(kk, box->nlocal[2]);
+      for (int ii = -NCELL_CUT; ii < box->nlocal[0] + NCELL_CUT; ii ++){
+	int typex = get_cell_type_1d(ii, box->nlocal[0]);
         int cell_off = get_cell_off(box, ii, jj, kk);
         celltype[cell_off] = max(typex, max(typey, typez));
       }

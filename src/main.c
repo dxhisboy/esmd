@@ -4,6 +4,7 @@
 #include "pair.h"
 #include "io.h"
 #include "pair_lj.h"
+#include "integrate.h"
 #include <math.h>
 int main(int argc, char **argv){
   esmd_t md;
