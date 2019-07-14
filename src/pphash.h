@@ -56,6 +56,32 @@ pph_hash_string(const char *s)
   return ret;
 }
 
+#define mix(a,b,c)                                      \
+  {                                                     \
+    a -= b; a -= c; a ^= (c>>13);                       \
+    b -= c; b -= a; b ^= (a<< 8);                       \
+    c -= a; c -= b; c ^= ((b&0xffffffff)>>13);          \
+    a -= b; a -= c; a ^= ((c&0xffffffff)>>12);          \
+    b -= c; b -= a; b = (b ^ (a<<16)) & 0xffffffff;     \
+    c -= a; c -= b; c = (c ^ (b>> 5)) & 0xffffffff;     \
+    a -= b; a -= c; a = (a ^ (c>> 3)) & 0xffffffff;     \
+    b -= c; b -= a; b = (b ^ (a<<10)) & 0xffffffff;     \
+    c -= a; c -= b; c = (c ^ (b>>15)) & 0xffffffff;     \
+  }
+
+static hashval_t
+pph_hash_pointer (const void *p)
+{
+  intptr_t v = (intptr_t) p;
+  unsigned a, b, c;
+  a = b = 0x9e3779b9;
+  a += v >> (sizeof (intptr_t) * 8 / 2);
+  b += v & (((intptr_t) 1 << (sizeof (intptr_t) * 8 / 2)) - 1);
+  c = 0x42135234;
+  mix (a, b, c);
+  return c;
+}
+
 static inline int
 pph_slot_is_empty(const void* slot){
   const void *entry = *((void**)slot);

@@ -1,9 +1,13 @@
 import array
 import numpy
+xv_init = array.array('d')
+bin = open("../../miniMD/ref/data/xv_init.bin", "rb").read()
+xv_init.frombytes(bin)
+xv_init = numpy.asarray(xv_init).reshape((131072, 7))
 xv = array.array('d')
-bin = open("xv.bin", "rb").read()
+bin = open("../../miniMD/ref/data/xv.bin", "rb").read()
 xv.frombytes(bin)
-
+xv = numpy.asarray(xv).reshape((131072, 6))
 # x = array.array('d')
 # v = array.array('d')
 # for i in range(0, len(xv), 6):
@@ -47,7 +51,7 @@ MASK=123459876
 def random(l):
     seed = l[0]
     k = int(seed / IQ)
-    seed = IA * (seed - k * IQ) - IR * k
+    seed = int(IA * (seed - k * IQ) - IR * k)
     if seed < 0:
         seed += IM
     l[0] = seed
@@ -67,7 +71,7 @@ def create_fcc_by_offset(dens, nx, ny, nz):
                     j = yi / scale * 2
                     k = zi / scale * 2
                     
-                    n = k * (2 * ny) * (2 * nx) + j * (2 * nx) + i + 1
+                    n = int(round(k * (2 * ny) * (2 * nx) + j * (2 * nx) + i + 1))
                     l = [n]
                     
                     x.append(xi)
@@ -85,10 +89,29 @@ def create_fcc_by_offset(dens, nx, ny, nz):
                     x.append(vx)
                     x.append(vy)
                     x.append(vz)
-    return numpy.asarray(x).reshape((131072, 4))
+                    x.append(n)
+    return numpy.asarray(x).reshape((131072, 7))
+def get_temperature(xv):
+    v = xv[:, 3:6]
+    t = (v * v).sum() * 1.0 / (131072 * 3 - 3)
+    return t
+def set_temperature(xv, t_req):
+    v = xv[:, 3:6]
+    vtot = v.sum(axis=0)
+    v[:,0] -= vtot[0] / 131072
+    v[:,1] -= vtot[1] / 131072
+    v[:,2] -= vtot[2] / 131072
+    
+    t = (v * v).sum() * 1.0 / (131072 * 3 - 3)
+    print(t, v.sum())
+    fac = numpy.sqrt(t_req / t)
+    v = v * fac
+    xv[:, 3:6] = v
 xo = create_fcc_by_offset(0.8442, 32, 32, 32)
-xf = create_fcc(0.8442, 32, 32, 32)
+# set_temperature(xo, 1.44)
+# xf = create_fcc(0.8442, 32, 32, 32)
 
 xo = numpy.asarray(sorted(xo.tolist(), key=lambda x: x[0] * 10000 + x[1] * 100 + x[2]))
-xf = numpy.asarray(sorted(xf.tolist(), key=lambda x: x[0] * 10000 + x[1] * 100 + x[2]))
+xv = numpy.asarray(sorted(xv.tolist(), key=lambda x: x[0] * 10000 + x[1] * 100 + x[2]))
+xv_init = numpy.asarray(sorted(xv_init.tolist(), key=lambda x: x[0] * 10000 + x[1] * 100 + x[2]))
 
