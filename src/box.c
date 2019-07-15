@@ -44,6 +44,7 @@ inline int get_cell_type_1d(int idx, int nlocal){
   return CT_INNER;
 
 }
+
 void esmd_box_setup_local(esmd_t *md){
 
   box_t *box = &(md->box);
@@ -103,3 +104,26 @@ void esmd_box_setup_local(esmd_t *md){
 
 }
 
+void box_add_atom(box_t *box, areal *x, areal *v, ireal q, int type){
+  areal *rlcell = box->rlcell;
+  int ci = floor(x[0] * rlcell[0] + TINY) - box->offset[0];
+  int cj = floor(x[1] * rlcell[1] + TINY) - box->offset[1];
+  int ck = floor(x[2] * rlcell[2] + TINY) - box->offset[2];
+  int celloff = get_cell_off(box, ci, cj, ck);
+  cell_t *cell = box->cells + celloff;
+  celldata_t *celldata = box->celldata + celloff;
+  int curatom = cell->natoms;
+  celldata->x[curatom][0] = x[0];
+  celldata->x[curatom][1] = x[1];
+  celldata->x[curatom][2] = x[2];
+  celldata->v[curatom][0] = v[0];
+  celldata->v[curatom][1] = v[1];
+  celldata->v[curatom][2] = v[2];
+  //to be filled
+  celldata->type[curatom] = 0;
+  celldata->q[curatom] = q;
+  celldata->f[curatom][0] = 0;
+  celldata->f[curatom][1] = 0;
+  celldata->f[curatom][2] = 0;
+  cell->natoms ++;
+}

@@ -27,16 +27,17 @@ int main(int argc, char **argv){
   lat_conf->atom_types = NULL;
   lat_conf->type = LAT_FCC;
   lat_conf->dens = 0.8442;
-  lat_conf->nx = 32;
-  lat_conf->ny = 32;
-  lat_conf->nz = 32;
+  lat_conf->nx = 64;
+  lat_conf->ny = 64;
+  lat_conf->nz = 64;
   
   md.utype = UNIT_LJ;
+
   esmd_lattice_scale(&md, lat_conf);
   esmd_set_box_size_by_lattice(&md);
   //esmd_set_box_size(&md, lg, lg, lg);
   esmd_box_setup_global(&md);
-  esmd_multiproc_part_cart(&md, 1, 1, 1, rank);
+  esmd_multiproc_part_cart(&md, 2, 2, 1, rank);
   esmd_box_setup_local(&md);
   esmd_create_atoms_by_lattice(&md);
   thermo_init(&md);

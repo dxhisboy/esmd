@@ -83,9 +83,9 @@ void esmd_create_atoms_by_lattice(esmd_t *md) {
   areal (*offset)[3] = lat->offset;
   areal *rlcell = box->rlcell;
   
-  int lat_lo_x = (int)floor(box->olocal[0] / (scale * lat->lx)) - 1;
-  int lat_lo_y = (int)floor(box->olocal[1] / (scale * lat->ly)) - 1;
-  int lat_lo_z = (int)floor(box->olocal[2] / (scale * lat->lz)) - 1;
+  int lat_lo_x = (int)floor(box->olocal[0] / (scale * lat->lx));
+  int lat_lo_y = (int)floor(box->olocal[1] / (scale * lat->ly));
+  int lat_lo_z = (int)floor(box->olocal[2] / (scale * lat->lz));
   int lat_hi_x = (int)ceil((box->olocal[0] + box->llocal[0]) / (scale * lat->lx)) + 1;
   int lat_hi_y = (int)ceil((box->olocal[1] + box->llocal[1]) / (scale * lat->ly)) + 1;
   int lat_hi_z = (int)ceil((box->olocal[2] + box->llocal[2]) / (scale * lat->lz)) + 1;
@@ -99,41 +99,26 @@ void esmd_create_atoms_by_lattice(esmd_t *md) {
     for (int jj = lat_lo_y; jj < lat_hi_y; jj ++){
       for (int ii = lat_lo_x; ii < lat_hi_x; ii ++){
 	for (int io = 0; io < lat->natoms; io ++){
-	  areal x = (ii * lat->lx + offset[io][0]) * scale;
-	  areal y = (jj * lat->ly + offset[io][1]) * scale;
-	  areal z = (kk * lat->lz + offset[io][2]) * scale;
-	  if (x >= box->olocal[0] && x < box->olocal[0] + box->llocal[0] &&
-	      y >= box->olocal[1] && y < box->olocal[1] + box->llocal[1] &&
-	      z >= box->olocal[2] && z < box->olocal[2] + box->llocal[2]){
+	  areal x[3], v[3];
+	  x[0] = (ii * lat->lx + offset[io][0]) * scale;
+	  x[1] = (jj * lat->ly + offset[io][1]) * scale;
+	  x[2] = (kk * lat->lz + offset[io][2]) * scale;
+	  if (x[0] >= box->olocal[0] && x[0] < box->olocal[0] + box->llocal[0] &&
+	      x[1] >= box->olocal[1] && x[1] < box->olocal[1] + box->llocal[1] &&
+	      x[2] >= box->olocal[2] && x[2] < box->olocal[2] + box->llocal[2]){
 	    //this part follows the seeding strategy of minimd, to be changed
-	    int ri = (int)round((x / scale) * 2);
-	    int rj = (int)round((y / scale) * 2);
-	    int rk = (int)round((z / scale) * 2);
+	    int ri = (int)round((x[0] / scale) * 2);
+	    int rj = (int)round((x[1] / scale) * 2);
+	    int rk = (int)round((x[2] / scale) * 2);
 	    int seed = rk * (2 * conf->ny) * (2 * conf->nx) + rj * (2 * conf->nx) + ri + 1;
-	    areal vx = next_rand(&seed);
-	    areal vy = next_rand(&seed);
-	    areal vz = next_rand(&seed);
-	    vtot[0] += vx;
-	    vtot[1] += vy;
-	    vtot[2] += vz;
-	    int ci = floor(x * rlcell[0] + TINY) - box->offset[0];
-	    int cj = floor(y * rlcell[1] + TINY) - box->offset[1];
-	    int ck = floor(z * rlcell[2] + TINY) - box->offset[2];
-	    int celloff = get_cell_off(box, ci, cj, ck);
-	    cell_t *cell = box->cells + celloff;
-	    celldata_t *celldata = box->celldata + celloff;
-	    int curatom = cell->natoms;
-	    celldata->x[curatom][0] = x;
-	    celldata->x[curatom][1] = y;
-	    celldata->x[curatom][2] = z;
-	    celldata->v[curatom][0] = vx;
-	    celldata->v[curatom][1] = vy;
-	    celldata->v[curatom][2] = vz;
-	    //to be filled
-	    celldata->type[curatom] = 0;
-	    cell->natoms ++;
+	    v[0] = next_rand(&seed);
+	    v[1] = next_rand(&seed);
+	    v[2] = next_rand(&seed);
+	    vtot[0] += v[0];
+	    vtot[1] += v[1];
+	    vtot[2] += v[2];
 	  }
-	  
+	  box_add_atom(box, x, v, 0, 0);
 	}
       }
     }
