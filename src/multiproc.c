@@ -228,3 +228,13 @@ void esmd_exchange_cell_ordered(esmd_t *md, int direction, int fields, int flags
   }
   
 }
+
+void esmd_global_sum_vec(esmd_t *md, areal *result, areal *localvec){
+  areal *vec = localvec;
+  MPI_Allreduce(localvec, result, 3, AREAL_MPI_TYPE, MPI_SUM, md->mpp.comm);
+}
+
+void esmd_global_sum_scalar(esmd_t *md, areal *result, areal localval){
+  areal val = localval;
+  MPI_Allreduce(&val, result, 1, AREAL_MPI_TYPE, MPI_SUM, md->mpp.comm);
+}

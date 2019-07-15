@@ -3,11 +3,17 @@
 #include <math.h>
 #include <stdlib.h>
 #include <util.h>
-void esmd_box_setup_global(esmd_t *md, areal x, areal y, areal z){
+void esmd_set_box_size(esmd_t *md, areal x, areal y, areal z){
   box_t *box = &(md->box);
   box->lglobal[0] = x;
   box->lglobal[1] = y;
-  box->lglobal[2] = z;
+  box->lglobal[2] = z;  
+}
+void esmd_box_setup_global(esmd_t *md/* , areal x, areal y, areal z */){
+  box_t *box = &(md->box);
+  /* box->lglobal[0] = x; */
+  /* box->lglobal[1] = y; */
+  /* box->lglobal[2] = z; */
 
   ireal lcell[3];
   
@@ -48,6 +54,14 @@ void esmd_box_setup_local(esmd_t *md){
   int nallx = box->nall[0], nally = box->nall[1], nallz = box->nall[2];
   int ncells = box->nall[0] * box->nall[1] * box->nall[2];
   int nlocalx = box->nlocal[0], nlocaly = box->nlocal[1], nlocalz = box->nlocal[2];
+
+  box->llocal[0] = box->nlocal[0] * box->lcell[0];
+  box->llocal[1] = box->nlocal[1] * box->lcell[1];
+  box->llocal[2] = box->nlocal[2] * box->lcell[2];
+  
+  box->olocal[0] = box->offset[0] * box->lcell[0];
+  box->olocal[1] = box->offset[1] * box->lcell[1];
+  box->olocal[2] = box->offset[2] * box->lcell[2];
   
   celldata_t *celldata = (celldata_t*)esmd_malloc(sizeof(celldata_t) * ncells, "celldata");
   

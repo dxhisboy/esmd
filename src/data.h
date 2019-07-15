@@ -15,6 +15,11 @@ enum cell_fields {
   CELL_E = 64
 };
 
+enum unit_type {
+  UNIT_LJ,
+  UNIT_REAL
+};
+
 typedef struct celldata {
   int export[CELL_SIZE];
   areal f[CELL_SIZE][3];
@@ -47,8 +52,8 @@ typedef struct box {
   int nlocal[3], nall[3], nglobal[3];
   int offset[3];
   areal lcell[3], rlcell[3];
-  areal lglobal[3]; //, llocal[3], lall[3];
-  //areal olocal[3], oall[3];
+  areal lglobal[3];
+  areal llocal[3], olocal[3]; //, oall[3];
   cell_t *cells;
   celldata_t *celldata;
   int *celltype, *cellowner;
@@ -65,7 +70,7 @@ typedef struct lj_param {
 typedef struct pair_conf {
   ireal cutoff;
   lj_param_t lj_param;
-  type_table rmass;
+  type_table rmass, mass;
 } pair_conf_t;
 
 enum integrate_type {
@@ -97,6 +102,23 @@ typedef struct multiproc {
   MPI_Comm comm;
 } multiproc_t;
 
+enum lattice_type {
+  LAT_FCC
+};
+
+typedef struct lattice {
+  areal (*offset)[3];
+  areal lx, ly, lz;
+  int natoms;
+} lattice_t;
+
+typedef struct lattice_config {
+  enum lattice_type type;
+  areal dens, scale;
+  int nx, ny, nz;
+  int *atom_types;
+} lattice_conf_t;
+
 #include <memory.h>
 typedef struct esmd {
   mempool_t force_pool;
@@ -104,6 +126,9 @@ typedef struct esmd {
   integrate_conf_t integrate_conf;
   box_t box;
   multiproc_t mpp;
+  lattice_conf_t lat_conf;
+  enum unit_type utype;
+  int natoms;
 } esmd_t;
 
 

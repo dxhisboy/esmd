@@ -7,6 +7,7 @@ void pair_lj_setup(esmd_t *md, areal *cutoff, ireal *epsilon, ireal *sigma, irea
   md->pair_conf.cutoff = 0;
   for (int i = 0; i < ntypes; i ++){
     md->pair_conf.rmass[i] = 1.0 / mass[i];
+    md->pair_conf.mass[i] = mass[i];
     for (int j = 0; j < ntypes; j ++){
       ireal sigma2 = sigma[i * ntypes + j] * sigma[i * ntypes + j];
       ireal sigma6 = sigma2 * sigma2 * sigma2;

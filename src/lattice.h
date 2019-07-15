@@ -1,14 +1,3 @@
 #include <data.h>
-enum lattice_type {
-  LAT_FCC
-};
-enum unit_type {
-  UNIT_LJ,
-  UNIT_REAL
-};
-
-typedef struct lattice {
-  areal (*offset)[3];
-  areal lx, ly, lz;
-  int weight;
-} lattice_t;
+void esmd_lattice_scale(esmd_t *md, lattice_conf_t *conf);
+void esmd_set_box_size_by_lattice(esmd_t *md);

@@ -69,6 +69,7 @@ pph_hash_string(const char *s)
     c -= a; c -= b; c = (c ^ (b>>15)) & 0xffffffff;     \
   }
 
+typedef __intptr_t intptr_t;
 static hashval_t
 pph_hash_pointer (const void *p)
 {

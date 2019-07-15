@@ -4,10 +4,12 @@
 //floating point type for accumulating
 #ifndef AREAL
 #define AREAL double
+#define AREAL_MPI_TYPE MPI_DOUBLE
 #endif
 //floating point type for interactions
 #ifndef IREAL
 #define IREAL double
+#define IREAL_MPI_TYPE MPI_DOUBLE
 #endif
 
 #ifndef CELL_SIZE

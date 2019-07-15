@@ -8,4 +8,5 @@ enum exchange_direction {
 
 void esmd_multiproc_part_cart(esmd_t *, int, int, int, int);
 void esmd_exchange_cell(esmd_t *md, int direction, int fields, int flags);
+void esmd_global_sum_vec(esmd_t *md, areal *result, areal *localvec);
 #endif
