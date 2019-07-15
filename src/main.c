@@ -27,9 +27,9 @@ int main(int argc, char **argv){
   lat_conf->atom_types = NULL;
   lat_conf->type = LAT_FCC;
   lat_conf->dens = 0.8442;
-  lat_conf->nx = 64;
-  lat_conf->ny = 64;
-  lat_conf->nz = 64;
+  lat_conf->nx = 32;
+  lat_conf->ny = 32;
+  lat_conf->nz = 32;
   
   md.utype = UNIT_LJ;
 

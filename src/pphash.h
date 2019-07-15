@@ -88,6 +88,7 @@ pph_slot_is_empty(const void* slot){
   const void *entry = *((void**)slot);
   return entry == HTAB_EMPTY || entry == HTAB_DELETED;
 }
+
 #endif
 
 #ifndef PPH_CALLOC
@@ -100,14 +101,14 @@ pph_slot_is_empty(const void* slot){
 #define __CAT__(x, y) x ## _ ## y
 #define CAT(x, y) __CAT__(x, y)
 
-struct CAT(PPH_NAME, htab) {
+struct PPH_NAME {
   PPH_TYPE **slots;
   int cap, cnt;
   long nquery, nscan;
   const struct prime_ent *prime_cur;
 };
-typedef struct CAT(PPH_NAME, htab) CAT(PPH_NAME, htab_t);
-#define htab_t struct CAT(PPH_NAME, htab)
+typedef struct PPH_NAME CAT(PPH_NAME, t);
+#define htab_t struct PPH_NAME
 //struct prime_ent p = {127, 0x02040811, 0x0624dd30, 6};
 static inline void CAT(PPH_NAME, check_cap)(htab_t *htab);
 static inline PPH_TYPE**

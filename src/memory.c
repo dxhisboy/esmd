@@ -21,7 +21,8 @@ mempool_t rec_pool;
 
 static void *esmd_htab_calloc(size_t count, size_t size);
 static void esmd_htab_free(void *ptr);
-#define PPH_NAME mr
+
+#define PPH_NAME mrtab
 #define PPH_TYPE memrec_t
 #define PPH_HASH(x) (pph_hash_string((x)->name))
 #define PPH_EQ(x, y) (!strcmp((x)->name, (y)->name))
@@ -30,7 +31,7 @@ static void esmd_htab_free(void *ptr);
 #include "pphash.h"
 
 //static htab_t htab;
-static mr_htab_t mrtab;
+static mrtab_t mrtab;
 extern void *esmd_malloc(size_t, char*);
 void mempool_init(mempool_t *pool, int block_size, int num_blocks, char *name) {
   pool->block_size = block_size;
@@ -69,22 +70,15 @@ void mempool_destroy(mempool_t *pool) {
   esmd_free(pool->buffer);
 }
 
-/* static int mr_eq(const void *e1, const void *e2) { */
-/*   const char *r1 = e1, *r2 = e2; */
-/*   return strcmp(r1, r2) == 0; */
-/* } */
-
-/* static hashval_t mr_hash(const void *e) { */
-/*   const char *r = e; */
-/*   return htab_hash_string(r); */
-/* } */
-
-/* static void mr_del(void *e){ */
-/* } */
-
-static void mr_print_trav(memrec_t *mrpp, void *help){
-  memrec_t *node = mrpp;
-  printf("%s: %ld bytes malloced in %ld mallocs\n", node->name, node->size, node->cnt);
+static void mr_print_trav(memrec_t *node, void *help){
+  char *units[] = {"B", "K", "M", "G", "T", "P", "E"};
+  int unit_ptr = 0;
+  size_t size = node->size;
+  while (size > 1024){
+    size /= 1024;
+    unit_ptr ++;
+  }
+  printf("%4ld%s %6ld %s\n", size, units[unit_ptr], node->cnt, node->name);
 }
 
 static void *esmd_aligned_malloc(size_t size){
@@ -119,9 +113,9 @@ static void esmd_htab_free(void *ptr){
 
 void memory_init(){
   //htab = htab_create_alloc(N_MEMREC, mr_hash, mr_eq, mr_del, esmd_htab_calloc, esmd_htab_free);
-  mr_init(&mrtab, 0);
+  mrtab_init(&mrtab, 0);
   //void **slot = mr_find_slot(mrtab, &mr_self, INSERT);
-  memrec_t **slot = mr_find_slot(&mrtab, &mr_self);
+  memrec_t **slot = mrtab_find_slot(&mrtab, &mr_self);
   assert(*slot == NULL);
   *slot = &mr_self;
 
@@ -139,7 +133,7 @@ void memory_init(){
 }
 
 void memory_print(){
-  mr_traverse(&mrtab, mr_print_trav, NULL);
+  mrtab_traverse(&mrtab, mr_print_trav, NULL);
 }
 
 void *esmd_malloc(size_t size, char *name){
@@ -147,7 +141,7 @@ void *esmd_malloc(size_t size, char *name){
   meminfo_t *info = ret - sizeof(meminfo_t);
   //void **slot = htab_find_slot(htab, name, INSERT);
   memrec_t *cast_name = (void*)name;
-  memrec_t **slot = mr_find_slot(&mrtab, cast_name);
+  memrec_t **slot = mrtab_find_slot(&mrtab, cast_name);
   assert(slot);
   if (pph_slot_is_empty(slot)){
     memrec_t *rec = mempool_get(&(rec_pool));
