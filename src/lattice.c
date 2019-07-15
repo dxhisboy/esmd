@@ -4,6 +4,8 @@
 #include <multiproc.h>
 #include <thermo.h>
 #include <stdio.h>
+//#define DEBUG_THIS_FILE
+#include <log.h>
 
 #define IA   16807
 #define IM   2147483647
@@ -81,17 +83,18 @@ void esmd_create_atoms_by_lattice(esmd_t *md) {
   areal (*offset)[3] = lat->offset;
   areal *rlcell = box->rlcell;
   
-  int lat_lo_x = (int)floor(box->olocal[0] / (scale * lat->lx));
-  int lat_lo_y = (int)floor(box->olocal[1] / (scale * lat->ly));
-  int lat_lo_z = (int)floor(box->olocal[2] / (scale * lat->lz));
-  int lat_hi_x = (int)ceil((box->olocal[0] + box->llocal[0]) / (scale * lat->lx));
-  int lat_hi_y = (int)ceil((box->olocal[1] + box->llocal[1]) / (scale * lat->ly));
-  int lat_hi_z = (int)ceil((box->olocal[2] + box->llocal[2]) / (scale * lat->lz));
+  int lat_lo_x = (int)floor(box->olocal[0] / (scale * lat->lx)) - 1;
+  int lat_lo_y = (int)floor(box->olocal[1] / (scale * lat->ly)) - 1;
+  int lat_lo_z = (int)floor(box->olocal[2] / (scale * lat->lz)) - 1;
+  int lat_hi_x = (int)ceil((box->olocal[0] + box->llocal[0]) / (scale * lat->lx)) + 1;
+  int lat_hi_y = (int)ceil((box->olocal[1] + box->llocal[1]) / (scale * lat->ly)) + 1;
+  int lat_hi_z = (int)ceil((box->olocal[2] + box->llocal[2]) / (scale * lat->lz)) + 1;
 
   areal vtot[3];
   vtot[0] = 0;
   vtot[1] = 0;
   vtot[2] = 0;
+  debug("%f %f %d %d\n", box->olocal[0], box->olocal[0] + box->llocal[0], lat_lo_x, lat_hi_x);
   for (int kk = lat_lo_z; kk < lat_hi_z; kk ++){
     for (int jj = lat_lo_y; jj < lat_hi_y; jj ++){
       for (int ii = lat_lo_x; ii < lat_hi_x; ii ++){
@@ -100,8 +103,8 @@ void esmd_create_atoms_by_lattice(esmd_t *md) {
 	  areal y = (jj * lat->ly + offset[io][1]) * scale;
 	  areal z = (kk * lat->lz + offset[io][2]) * scale;
 	  if (x >= box->olocal[0] && x < box->olocal[0] + box->llocal[0] &&
-	      y >= box->olocal[1] && x < box->olocal[1] + box->llocal[1] &&
-	      z >= box->olocal[2] && x < box->olocal[2] + box->llocal[2]){
+	      y >= box->olocal[1] && y < box->olocal[1] + box->llocal[1] &&
+	      z >= box->olocal[2] && z < box->olocal[2] + box->llocal[2]){
 	    //this part follows the seeding strategy of minimd, to be changed
 	    int ri = (int)round((x / scale) * 2);
 	    int rj = (int)round((y / scale) * 2);
@@ -113,9 +116,9 @@ void esmd_create_atoms_by_lattice(esmd_t *md) {
 	    vtot[0] += vx;
 	    vtot[1] += vy;
 	    vtot[2] += vz;
-	    int ci = floor(x * rlcell[0] + TINY);
-	    int cj = floor(y * rlcell[1] + TINY);
-	    int ck = floor(z * rlcell[2] + TINY);
+	    int ci = floor(x * rlcell[0] + TINY) - box->offset[0];
+	    int cj = floor(y * rlcell[1] + TINY) - box->offset[1];
+	    int ck = floor(z * rlcell[2] + TINY) - box->offset[2];
 	    int celloff = get_cell_off(box, ci, cj, ck);
 	    cell_t *cell = box->cells + celloff;
 	    celldata_t *celldata = box->celldata + celloff;
@@ -147,10 +150,10 @@ void esmd_create_atoms_by_lattice(esmd_t *md) {
 	celldata->v[i][1] -= vavg[1];
 	celldata->v[i][2] -= vavg[2];
 	if (celldata->x[i][0] == 0 && celldata->x[i][1] == 0 && celldata->x[i][2] == 0){
-	  printf("%f %f %f\n", celldata->v[i][0], celldata->v[i][1], celldata->v[i][2]);
+	  debug("%f %f %f\n", celldata->v[i][0], celldata->v[i][1], celldata->v[i][2]);
 	}
       }
     });
   md->natoms = natoms;
-  printf("%f\n", temperature(md));
+  debug("%f\n", temperature(md));
 }

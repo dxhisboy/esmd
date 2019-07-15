@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <assert.h>
 #include <pair_lj.h>
+//#define DEBUG_THIS_FILE
+#include <log.h>
 void initial_integrate_nve(esmd_t *md){
   box_t *box = &(md->box);
   integrate_conf_t *integrate_conf = &(md->integrate_conf);
@@ -36,7 +38,7 @@ void initial_integrate_nve(esmd_t *md){
       }
     }
   }
-  printf("totalv = %g\n", totalv);
+  //debug("totalv = %g\n", totalv);
 }
 
 void final_integrate_nve(esmd_t *md){
@@ -65,7 +67,7 @@ void final_integrate_nve(esmd_t *md){
       }
     }
   }
-  printf("totalv = %g\n", totalv);
+  debug("totalv = %g\n", totalv);
 }
 
 #include <data.h>
@@ -100,9 +102,9 @@ void esmd_export_atoms(esmd_t *md){
 	  /* if (x[i][0] > box->lglobal[0]) x[i][0] -= box->lglobal[0]; */
 	  /* if (x[i][1] > box->lglobal[1]) x[i][1] -= box->lglobal[1]; */
 	  /* if (x[i][2] > box->lglobal[2]) x[i][2] -= box->lglobal[2]; */
-	  int cellx = floor(x[i][0] * rlcell[0] + TINY);
-	  int celly = floor(x[i][1] * rlcell[1] + TINY);
-	  int cellz = floor(x[i][2] * rlcell[2] + TINY);
+	  int cellx = floor(x[i][0] * rlcell[0] + TINY) - box->offset[0];
+	  int celly = floor(x[i][1] * rlcell[1] + TINY) - box->offset[1];
+	  int cellz = floor(x[i][2] * rlcell[2] + TINY) - box->offset[2];
 	  /* if (cellx >= box->nglobal[0]) cellx -= box->nglobal[0]; */
 	  /* if (celly >= box->nglobal[1]) celly -= box->nglobal[1]; */
 	  /* if (cellz >= box->nglobal[2]) cellz -= box->nglobal[2]; */
@@ -138,55 +140,8 @@ void esmd_export_atoms(esmd_t *md){
       }
     }
   }
-  printf("%d\n", total_export);
+  debug("%d\n", total_export);
 }
-
-    /* int esmd_import_atoms_pairwise(box_t *box, int self_off, int neigh_off) { */
-    /*   cell_t *cell_self = box->cells + self_off; */
-    /*   celldata_t *data_self = box->celldata + self_off; */
-    /*   cell_t *cell_neigh = box->cells + neigh_off; */
-    /*   celldata_t *data_neigh = box->celldata + neigh_off; */
-  
-    /*   areal (*v)[3] = data_self->v; */
-    /*   areal (*x)[3] = data_self->x; */
-    /*   areal (*f)[3] = data_self->f; */
-    /*   areal *q = data_self->q; */
-    /*   int *type = data_self->type; */
-
-    /*   areal (*ve)[3] = data_neigh->v; */
-    /*   areal (*xe)[3] = data_neigh->x; */
-    /*   areal (*fe)[3] = data_neigh->f; */
-    /*   areal *qe = data_neigh->q; */
-    /*   int *typee = data_neigh->type; */
-    /*   int *export = data_neigh->export; */
-    /*   int natoms_new = cell_self->natoms; */
-    /*   for (int i = cell_neigh->export_ptr; i < CELL_SIZE; i ++){ */
-    /*     if (export[i] == self_off){ */
-    /*       x[natoms_new][0] = xe[i][0]; */
-    /*       x[natoms_new][1] = xe[i][1]; */
-    /*       x[natoms_new][2] = xe[i][2]; */
-    /*       int safe = (x[natoms_new][0] + TINY >= cell_self->bbox_ideal[0][0] && x[natoms_new][0] -TINY <= cell_self->bbox_ideal[1][0] && */
-    /*                   x[natoms_new][1] + TINY >= cell_self->bbox_ideal[0][1] && x[natoms_new][1] -TINY <= cell_self->bbox_ideal[1][1] && */
-    /*                   x[natoms_new][2] + TINY >= cell_self->bbox_ideal[0][2] && x[natoms_new][2] -TINY <= cell_self->bbox_ideal[1][2]); */
-    /*       if (!safe){ */
-    /*         printf("%d unsafely imported %f %f %f\n", self_off, x[natoms_new][0], x[natoms_new][1], x[natoms_new][2]); */
-    /*       } */
- 
-    /*       f[natoms_new][0] = fe[i][0]; */
-    /*       f[natoms_new][1] = fe[i][1]; */
-    /*       f[natoms_new][2] = fe[i][2]; */
-    /*       v[natoms_new][0] = ve[i][0]; */
-    /*       v[natoms_new][1] = ve[i][1]; */
-    /*       v[natoms_new][2] = ve[i][2]; */
-    /*       type[natoms_new] = typee[i]; */
-    /*       q[natoms_new] = qe[i]; */
-    /*       natoms_new ++; */
-    /*     } */
-    /*   } */
-    /*   int nimport = natoms_new - cell_self->natoms; */
-    /*   cell_self->natoms = natoms_new; */
-    /*   return nimport; */
-    /* } */
 
 int esmd_import_atoms_pairwise(box_t *box, int self_off, int neigh_off) {
   cell_t *cell_self = box->cells + self_off;
@@ -208,9 +163,9 @@ int esmd_import_atoms_pairwise(box_t *box, int self_off, int neigh_off) {
   int *export = data_neigh->export;
   int natoms_new = cell_self->natoms;
   for (int i = cell_neigh->export_ptr; i < CELL_SIZE; i ++){
-    int cellx = floor(xe[i][0] * rlcell[0] + TINY);
-    int celly = floor(xe[i][1] * rlcell[1] + TINY);
-    int cellz = floor(xe[i][2] * rlcell[2] + TINY);
+    int cellx = floor(xe[i][0] * rlcell[0] + TINY) - box->offset[0];
+    int celly = floor(xe[i][1] * rlcell[1] + TINY) - box->offset[1];
+    int cellz = floor(xe[i][2] * rlcell[2] + TINY) - box->offset[2];
     int import_off = get_cell_off(box, cellx, celly, cellz);
     if (import_off == self_off){
       x[natoms_new][0] = xe[i][0];
@@ -220,7 +175,7 @@ int esmd_import_atoms_pairwise(box_t *box, int self_off, int neigh_off) {
 		  xe[i][1] >= cell_self->bbox_ideal[0][1] && xe[i][1] <= cell_self->bbox_ideal[1][1] &&
 		  xe[i][2] >= cell_self->bbox_ideal[0][2] && xe[i][2] <= cell_self->bbox_ideal[1][2]);
       if (!safe){
-	printf("%d unsafely imported %f %f %f\n", self_off, x[natoms_new][0], x[natoms_new][1], x[natoms_new][2]);
+	debug("%d unsafely imported %f %f %f\n", self_off, x[natoms_new][0], x[natoms_new][1], x[natoms_new][2]);
       }
  
       f[natoms_new][0] = fe[i][0];
@@ -263,7 +218,7 @@ void esmd_import_atoms_outer_from_local(esmd_t *md){
       }
     }
   }
-  printf("outer from local %d\n", nimport);
+  debug("%d outer from local %d\n", md->mpp.pid, nimport);
 }
 
 void esmd_import_atoms_outer_from_halo(esmd_t *md){
@@ -290,7 +245,7 @@ void esmd_import_atoms_outer_from_halo(esmd_t *md){
       }
     }
   }
-  printf("outer from halo %d\n", nimport);
+  debug("%d outer from halo %d\n", md->mpp.pid, nimport);
 }
 
 void esmd_import_atoms_inner_from_local(esmd_t *md){
@@ -315,7 +270,7 @@ void esmd_import_atoms_inner_from_local(esmd_t *md){
       }
     }
   }
-  printf("inner from local %d\n", nimport);
+  debug("%d inner from local %d\n", md->mpp.pid, nimport);
 }
 
 int get_halo_type(box_t *box, int ii, int jj, int kk){
@@ -346,8 +301,6 @@ void esmd_import_atoms_halo_from_local(esmd_t *md){
 		  kk + dz >= -NCELL_CUT && kk + dz < nlocal[2] + NCELL_CUT){
 		if (get_halo_type(box, ii, jj, kk) == get_halo_type(box, ii + dx, jj + dy, kk + dz)) continue;
 		int neigh_off = get_cell_off(box, ii + dx, jj + dy, kk + dz);
-		//if (celltype[neigh_off] != CT_OUTER) continue;
-		//printf("%d %d %d %d %d %d\n", ii, jj, kk, dx, dy, dz);
 		nimport += esmd_import_atoms_pairwise(box, cell_off, neigh_off);
 	      }
 	    }
@@ -357,7 +310,7 @@ void esmd_import_atoms_halo_from_local(esmd_t *md){
       }
     }
   }
-  printf("halo from local %d\n", nimport);
+  debug("halo from local %d\n", nimport);
 }
 
 void esmd_import_atoms(esmd_t *md){
@@ -382,6 +335,16 @@ void esmd_import_atoms(esmd_t *md){
 }
 
 void integrate(esmd_t *md) {
+  compute_kinetic_local(md);
+  esmd_global_accumulate(md);
+  //debug("kinetic %f %f\n", md->accu_local.kinetic, md->accu_global.kinetic);
+  thermo_compute(md);
+  if (md->mpp.pid == 0)
+    info("eng: %f temp: %f press: %f\n", md->thermo.eng, md->thermo.temp, md->thermo.press);
+  md->accu_local.virial = 0;
+  md->accu_local.epot = 0;
+  md->accu_local.kinetic = 0;
+  
   initial_integrate_nve(md);
   esmd_export_atoms(md);
   esmd_import_atoms_outer_from_local(md);

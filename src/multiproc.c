@@ -238,3 +238,8 @@ void esmd_global_sum_scalar(esmd_t *md, areal *result, areal localval){
   areal val = localval;
   MPI_Allreduce(&val, result, 1, AREAL_MPI_TYPE, MPI_SUM, md->mpp.comm);
 }
+
+void esmd_global_accumulate(esmd_t *md){
+  int ncomp = sizeof(accumulate_t) / sizeof(areal);
+  MPI_Allreduce(&(md->accu_local), &(md->accu_global), ncomp, AREAL_MPI_TYPE, MPI_SUM, md->mpp.comm);
+}

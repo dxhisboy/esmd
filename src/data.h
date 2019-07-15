@@ -119,6 +119,15 @@ typedef struct lattice_config {
   int *atom_types;
 } lattice_conf_t;
 
+typedef struct accumulate {
+  areal epot, virial, kinetic;
+} accumulate_t;
+
+typedef struct thermo {
+  areal eng, temp, press;
+  areal e_scale, t_scale, p_scale, dof_boltz;
+} thermo_t;
+
 #include <memory.h>
 typedef struct esmd {
   mempool_t force_pool;
@@ -128,6 +137,8 @@ typedef struct esmd {
   multiproc_t mpp;
   lattice_conf_t lat_conf;
   enum unit_type utype;
+  accumulate_t accu_local, accu_global;
+  thermo_t thermo;
   int natoms;
 } esmd_t;
 

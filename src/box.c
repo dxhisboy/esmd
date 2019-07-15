@@ -3,18 +3,17 @@
 #include <math.h>
 #include <stdlib.h>
 #include <util.h>
+//#define DEBUG_THIS_FILE
+#include <log.h>
+
 void esmd_set_box_size(esmd_t *md, areal x, areal y, areal z){
   box_t *box = &(md->box);
   box->lglobal[0] = x;
   box->lglobal[1] = y;
   box->lglobal[2] = z;  
 }
-void esmd_box_setup_global(esmd_t *md/* , areal x, areal y, areal z */){
+void esmd_box_setup_global(esmd_t *md){
   box_t *box = &(md->box);
-  /* box->lglobal[0] = x; */
-  /* box->lglobal[1] = y; */
-  /* box->lglobal[2] = z; */
-
   ireal lcell[3];
   
   ireal rlcell_max = (NCELL_CUT + NCELL_SKIN) / md->pair_conf.cutoff;
@@ -30,7 +29,7 @@ void esmd_box_setup_global(esmd_t *md/* , areal x, areal y, areal z */){
   box->rlcell[0] = 1. / box->lcell[0];
   box->rlcell[1] = 1. / box->lcell[1];
   box->rlcell[2] = 1. / box->lcell[2];
-  printf("lcell: %f %f %f\n", box->lcell[0], box->lcell[1], box->lcell[2]);
+  debug("lcell: %f %f %f\n", box->lcell[0], box->lcell[1], box->lcell[2]);
 }
 
 
@@ -81,12 +80,12 @@ void esmd_box_setup_local(esmd_t *md){
         cell_t *cell = box->cells + cell_off;
         cell->natoms = 0;
         cell->nreplicas = 0;
-        cell->bbox_ideal[0][0] = ii * lcell[0];
-        cell->bbox_ideal[0][1] = jj * lcell[1];
-        cell->bbox_ideal[0][2] = kk * lcell[2];
-        cell->bbox_ideal[1][0] = (ii + 1) * lcell[0];
-        cell->bbox_ideal[1][1] = (jj + 1) * lcell[1];
-        cell->bbox_ideal[1][2] = (kk + 1) * lcell[2];
+        cell->bbox_ideal[0][0] = (box->offset[0] + ii) * lcell[0];
+        cell->bbox_ideal[0][1] = (box->offset[1] + jj) * lcell[1];
+        cell->bbox_ideal[0][2] = (box->offset[2] + kk) * lcell[2];
+        cell->bbox_ideal[1][0] = (box->offset[0] + ii + 1) * lcell[0];
+        cell->bbox_ideal[1][1] = (box->offset[1] + jj + 1) * lcell[1];
+        cell->bbox_ideal[1][2] = (box->offset[2] + kk + 1) * lcell[2];
       }
     }
   }

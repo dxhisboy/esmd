@@ -81,6 +81,7 @@ try:
     os.environ["BLDDIR"] = os.path.join(caseroot, "bld")
     os.environ["HISTDIR"] = histdir
     os.environ["LID"] = LID
+    os.environ["CASEROOT"] = caseroot
     os.chdir(objdir)
     ret = 0
     if args.action == "build":
@@ -89,6 +90,7 @@ try:
         ret = shell.run(["make", "-f", os.path.join(toolroot, "Makefile"), "clean"]).returncode
     if ret != 0:
         logger.error("build failed, exitting...")
+        sys.exit(1)
     else:
         logger.info("done")
         if args.action == "build":

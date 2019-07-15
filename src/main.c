@@ -39,12 +39,14 @@ int main(int argc, char **argv){
   esmd_multiproc_part_cart(&md, 1, 1, 1, rank);
   esmd_box_setup_local(&md);
   esmd_create_atoms_by_lattice(&md);
+  thermo_init(&md);
   //printf("%d\n", md.natoms);
   scale_to_temp(&md, 1.44);
 
   esmd_exchange_cell(&md, LOCAL_TO_HALO, CELL_META | CELL_X | CELL_T, TRANS_ADJ_X);
   pair_lj_force(&md);
   esmd_exchange_cell(&md, HALO_TO_LOCAL, CELL_F, TRANS_INC_F);
+  //return 0;
   for (int i = 0; i < 10; i ++){
     integrate(&md);
   }
