@@ -2,6 +2,7 @@
 #include <data.h>
 #include <loops.h>
 #include <multiproc.h>
+#include <log.h>
 double temperature(esmd_t *md){
   box_t *box = &(md->box);
   areal mv2_tot = 0;
@@ -55,7 +56,7 @@ void scale_to_temp(esmd_t *md, areal t_req){
 	v[i][1] *= scale;
 	v[i][2] *= scale;
 	if (x[i][0] == 0 && x[i][1] == 0 && x[i][2] == 0){
-	  printf("%f %f %f\n", v[i][0], v[i][1], v[i][2]);
+	  debug("%f %f %f\n", v[i][0], v[i][1], v[i][2]);
 	}	
       }
     });

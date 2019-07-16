@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <pair_lj.h>
+#include <thermo.h>
 //#define DEBUG_THIS_FILE
 #include <log.h>
 void initial_integrate_nve(esmd_t *md){

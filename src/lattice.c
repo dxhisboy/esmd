@@ -3,7 +3,8 @@
 #include <loops.h>
 #include <multiproc.h>
 #include <thermo.h>
-#include <stdio.h>
+#include <box.h>
+
 //#define DEBUG_THIS_FILE
 #include <log.h>
 
@@ -111,6 +112,7 @@ void esmd_create_atoms_by_lattice(esmd_t *md) {
 	    int rj = (int)round((x[1] / scale) * 2);
 	    int rk = (int)round((x[2] / scale) * 2);
 	    int seed = rk * (2 * conf->ny) * (2 * conf->nx) + rj * (2 * conf->nx) + ri + 1;
+	    //int seed = ((kk * conf->ny + jj) * conf->nx + ii) * lat->natoms + io + 1;
 	    v[0] = next_rand(&seed);
 	    v[1] = next_rand(&seed);
 	    v[2] = next_rand(&seed);

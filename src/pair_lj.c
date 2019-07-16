@@ -2,8 +2,9 @@
 #include <stdio.h>
 #include <assert.h>
 #include <math.h>
-#define DEBUG_THIS_FILE
+//#define DEBUG_THIS_FILE
 #include <log.h>
+
 void pair_lj_setup(esmd_t *md, areal *cutoff, ireal *epsilon, ireal *sigma, ireal *mass, int ntypes){
   assert(ntypes < MAX_TYPES);
   md->pair_conf.cutoff = 0;

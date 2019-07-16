@@ -32,8 +32,8 @@ static void esmd_htab_free(void *ptr);
 
 //static htab_t htab;
 static mrtab_t mrtab;
-extern void *esmd_malloc(size_t, char*);
-void mempool_init(mempool_t *pool, int block_size, int num_blocks, char *name) {
+extern void *esmd_malloc(size_t, const char*);
+void mempool_init(mempool_t *pool, int block_size, int num_blocks, const char *name) {
   pool->block_size = block_size;
   pool->buffer = esmd_malloc(block_size * num_blocks, name);
   pool->free_list = esmd_malloc(sizeof(int) * num_blocks, name);
@@ -91,12 +91,12 @@ static void *esmd_aligned_malloc(size_t size){
   return ret;
 }
 
-static void esmd_aligned_free(void *ptr){
+static void esmd_aligned_free(void *ptr) {
   meminfo_t *info = ptr - sizeof(meminfo_t);
   free(info->raw);
 }
 
-static void *esmd_htab_calloc(size_t count, size_t size){
+static void *esmd_htab_calloc(size_t count, size_t size) {
   mr_self.size += size * count;
   mr_self.cnt += 1;
   void *ret = esmd_aligned_malloc(size * count);
@@ -104,17 +104,15 @@ static void *esmd_htab_calloc(size_t count, size_t size){
   return ret;
 }
 
-static void esmd_htab_free(void *ptr){
+static void esmd_htab_free(void *ptr) {
   meminfo_t *info = ptr - sizeof(meminfo_t);
   mr_self.size -= info->size;
   mr_self.cnt --;
   esmd_aligned_free(ptr);
 }
 
-void memory_init(){
-  //htab = htab_create_alloc(N_MEMREC, mr_hash, mr_eq, mr_del, esmd_htab_calloc, esmd_htab_free);
+void memory_init() {
   mrtab_init(&mrtab, 0);
-  //void **slot = mr_find_slot(mrtab, &mr_self, INSERT);
   memrec_t **slot = mrtab_find_slot(&mrtab, &mr_self);
   assert(*slot == NULL);
   *slot = &mr_self;
@@ -128,15 +126,16 @@ void memory_init(){
   list_info->rec = &mr_self;
   
   mempool_init_prealloc(&(rec_pool), sizeof(memrec_t), N_MEMREC, rec_buffer, rec_list);
+
   mr_self.size += sizeof(int) * N_MEMREC + sizeof(memrec_t) * N_MEMREC;
   mr_self.cnt += 1;
 }
 
-void memory_print(){
+void memory_print() {
   mrtab_traverse(&mrtab, mr_print_trav, NULL);
 }
 
-void *esmd_malloc(size_t size, char *name){
+void *esmd_malloc(size_t size, const char *name) {
   void *ret = esmd_aligned_malloc(size);
   meminfo_t *info = ret - sizeof(meminfo_t);
   //void **slot = htab_find_slot(htab, name, INSERT);
@@ -148,7 +147,8 @@ void *esmd_malloc(size_t size, char *name){
     strcpy(rec->name, name);
     rec->size = size;
     rec->cnt = 1;
-    *slot = rec;
+    //*slot = rec;
+    mrtab_insert(&mrtab, slot, rec);
     info->rec = rec;
   } else {
     memrec_t *rec = *slot;
@@ -159,16 +159,10 @@ void *esmd_malloc(size_t size, char *name){
   return ret;
 }
 
-void esmd_free(void *ptr){
+void esmd_free(void *ptr) {
   meminfo_t *info = ptr - sizeof(meminfo_t);
   info->rec->size -= info->size;
   info->rec->cnt --;
   esmd_aligned_free(ptr);
 }
 
-#ifdef TEST
-int main(){
-  memory_init();
-  memory_print();
-}
-#endif

@@ -13,7 +13,7 @@
 #endif
 
 #ifndef CELL_SIZE
-#define CELL_SIZE 64
+#define CELL_SIZE 16
 #endif
 
 #ifndef MAX_TYPES

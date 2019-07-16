@@ -1,19 +1,19 @@
 #ifndef MEMORY_H_
 #define MEMORY_H_
-#include <stdlib.h>
-#include <cppdefs.h>
 typedef struct mempool {
   void *buffer;
   int *free_list, free_count;
   int block_size;
 } mempool_t;
 
-void mempool_init(mempool_t*, int, int, char *);
-void *mempool_get(mempool_t*);
-void mempool_return(mempool_t*, void *);
-void mempool_destroy(mempool_t*);
-void *esmd_malloc(size_t, char*);
-void esmd_free(void*);
+//function signatures
+void mempool_init(mempool_t *pool, int block_size, int num_blocks, const char *name);
+void *mempool_get(mempool_t *pool);
+void mempool_return(mempool_t *pool, void *ptr);
+void mempool_destroy(mempool_t *pool);
 void memory_init();
 void memory_print();
+void *esmd_malloc(size_t size, const char *name);
+void esmd_free(void *ptr);
+//end function signatures
 #endif

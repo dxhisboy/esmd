@@ -1,3 +1,4 @@
+#include <stdio.h>
 #ifdef DEBUG_THIS_FILE
 #define debug(fmt, ...) fprintf(stderr, "\033[1;36m[DBG]\033[0m " fmt, __VA_ARGS__)
 #else
