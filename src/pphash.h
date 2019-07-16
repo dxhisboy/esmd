@@ -238,6 +238,18 @@ CAT(PPH_NAME, delete)(htab_t *htab, PPH_TYPE **slot){
   *slot = HTAB_DELETED;
 }
 
+static inline int
+CAT(PPH_NAME, pack)(htab_t *htab, PPH_TYPE *entries){
+  int nrec_write = 0;
+  PPH_TYPE **top = htab->slots + htab->cap, **slot;
+  for (slot = htab->slots; slot != top; slot ++){
+    if (*slot != HTAB_EMPTY && *slot != HTAB_DELETED) {
+      memcpy(entries + nrec_write, *slot, sizeof(PPH_TYPE));
+      nrec_write ++;
+    }
+  }  
+}
+
 #undef CAT
 #undef __CAT__
 #undef htab_t

@@ -5,7 +5,7 @@
 #include <assert.h>
 
 #include <multiproc.h>
-
+int gbl_pid, gbl_np;
 static inline int get_neighbor(esmd_t *md, int dx, int dy, int dz, areal *off) {
   multiproc_t *mpp = &(md->mpp);
   int neigh_x = mpp->pidx + dx;
@@ -166,6 +166,8 @@ void esmd_multiproc_part_cart(esmd_t *md, int npx, int npy, int npz, int pid){
   box->offset[2] = stz;
 
   init_comm_unordered(md);
+  gbl_pid = pid;
+  gbl_np = npx * npy * npz;
 }
 
 inline int proc_3d_to_flat(multiproc_t *mpp, int pidx, int pidy, int pidz){

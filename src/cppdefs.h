@@ -41,6 +41,9 @@
 #define N_MEMREC 2048
 #endif
 
+#ifndef N_TIMER
+#define N_TIMER 1024
+#endif
 #ifndef ALIGNP
 #define ALIGNP 5
 #endif

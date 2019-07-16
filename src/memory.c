@@ -159,6 +159,11 @@ void *esmd_malloc(size_t size, const char *name) {
   return ret;
 }
 
+void *esmd_calloc(size_t nmemb, size_t size, char *name) {
+  void *ret = esmd_malloc(nmemb * size, name);
+  memset(ret, 0, nmemb * size);
+  return ret;
+}
 void esmd_free(void *ptr) {
   meminfo_t *info = ptr - sizeof(meminfo_t);
   info->rec->size -= info->size;
