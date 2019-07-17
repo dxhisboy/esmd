@@ -33,6 +33,9 @@
 #endif
 #endif
 
+#ifndef HUGE
+#define HUGE 1e20
+#endif
 #ifndef MAX_REPLICA
 #define MAX_REPLICA 64
 #endif

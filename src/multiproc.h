@@ -7,10 +7,12 @@ enum exchange_direction {
   HALO_TO_LOCAL = 1
 };
 //function signatures
+void esmd_mpi_init(esmd_t *md);
+void esmd_auto_part(esmd_t *md);
 void init_halo_unordered(halo_t *halo, esmd_t *md, int dx, int dy, int dz);
 void init_comm_unordered(esmd_t *md);
 void init_comm_ordered(esmd_t *md);
-void esmd_multiproc_part_cart(esmd_t *md, int npx, int npy, int npz, int pid);
+void esmd_multiproc_part(esmd_t *md);
 void esmd_comm_start(esmd_t *md, MPI_Comm comm, halo_t *halo, int dir, int fields, int flags);
 void esmd_comm_finish(esmd_t *md, halo_t *halo, int dir, int fields, int flags);
 void esmd_exchange_cell(esmd_t *md, int direction, int fields, int flags);

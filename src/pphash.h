@@ -214,7 +214,6 @@ CAT(PPH_NAME, traverse)(htab_t *htab, void (*callback)(PPH_TYPE*, void *), void 
 static inline void
 CAT(PPH_NAME, check_cap)(htab_t *htab){
   if (htab->cap * 3 < htab->cnt * 4){
-    puts("extending");
     htab->prime_cur ++;
     PPH_TYPE **old_slots = htab->slots;
     PPH_TYPE **top = htab->slots + htab->cap, **slot;

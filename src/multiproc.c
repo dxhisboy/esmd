@@ -5,6 +5,18 @@
 #include <assert.h>
 #include <timer.h>
 #include <multiproc.h>
+#include <stdarg.h>
+int master_fprintf(FILE *file, const char *fmt, ...) {
+  int rank, ret = 0;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  if (rank == 0){
+    va_list arg;
+    va_start(arg, fmt);
+    ret = vfprintf(file, fmt, arg);
+    va_end(arg);
+  }
+  return ret;
+}
 static inline int get_neighbor(esmd_t *md, int dx, int dy, int dz, areal *off) {
   multiproc_t *mpp = &(md->mpp);
   int neigh_x = mpp->pidx + dx;
@@ -36,6 +48,45 @@ static inline int get_neighbor(esmd_t *md, int dx, int dy, int dz, areal *off) {
     off[2] = md->box.lglobal[2];
   }
   return (neigh_x * mpp->npy + neigh_y) * mpp->npz + neigh_z;
+}
+
+void esmd_mpi_init(esmd_t *md){
+  MPI_Init(NULL, NULL);
+  md->mpp.comm = MPI_COMM_WORLD;
+  MPI_Comm_rank(MPI_COMM_WORLD, &(md->mpp.pid));
+}
+
+void esmd_auto_part(esmd_t *md){
+  int np, me;
+  MPI_Comm_rank(md->mpp.comm, &me);
+  MPI_Comm_size(md->mpp.comm, &np);
+  int *nglobal = md->box.nglobal;
+  double best_bound = HUGE;
+  int best_px, best_py, best_pz;
+  double areaxy = nglobal[0] * nglobal[1];
+  double areaxz = nglobal[0] * nglobal[2];
+  double areayz = nglobal[1] * nglobal[2];
+  for (int pz = 1; pz <= np; pz ++){
+    if (np % pz == 0){
+      int npxy = np / pz;
+      for (int py = 1; py <= npxy; py ++){
+	if (npxy % py == 0){
+	  int px = npxy / py;
+	  double bound = areaxy / px / py + areaxz / px / pz + areayz / py / pz;
+	  if (bound < best_bound){
+	    best_px = px;
+	    best_py = py;
+	    best_pz = pz;
+	    best_bound = bound;
+	  }
+	}
+      }
+    }
+  }
+  assert(best_bound != HUGE);
+  md->mpp.npx = best_px;
+  md->mpp.npy = best_py;
+  md->mpp.npz = best_pz;
 }
 
 static inline void part1d(int n, int np, int pid, int *start, int *count){
@@ -131,7 +182,11 @@ void init_comm_ordered(esmd_t *md){
   init_halo_ordered(halo + 5, md, 2,  1, send_buf_next, recv_buf_next);
 }
 
-void esmd_multiproc_part_cart(esmd_t *md, int npx, int npy, int npz, int pid){
+void esmd_multiproc_part(esmd_t *md){
+  int npx = md->mpp.npx;
+  int npy = md->mpp.npy;
+  int npz = md->mpp.npz;
+  int pid = md->mpp.pid;
   box_t *box = &(md->box);
   int pidx = pid / (npy * npz);
   int pidy = (pid - pidx * npy * npz) / npz;
@@ -143,9 +198,6 @@ void esmd_multiproc_part_cart(esmd_t *md, int npx, int npy, int npz, int pid){
   md->mpp.pidy = pidy;
   md->mpp.pidz = pidz;
   md->mpp.pid = pid;
-  md->mpp.npx  = npx ;
-  md->mpp.npy  = npy ;
-  md->mpp.npz  = npz ;
   md->mpp.np   = npx * npy * npz;
   int stx, cntx, sty, cnty, stz, cntz;
   part1d(box->nglobal[0], npx, pidx, &stx, &cntx);
@@ -227,8 +279,7 @@ void esmd_exchange_cell_ordered(esmd_t *md, int direction, int fields, int flags
       esmd_comm_finish(md, mpp->halo + i + 1, direction, fields, flags);
       //printf("%d %d\n", mpp->halo[i + 0].neighbor, mpp->halo[i + 1].neighbor);
     }
-  }
-  
+  }  
 }
 
 void esmd_global_sum_vec(esmd_t *md, areal *result, areal *localvec){

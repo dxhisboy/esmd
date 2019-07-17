@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <util.h>
 //#define DEBUG_THIS_FILE
+#include <loops.h>
 #include <log.h>
 
 void esmd_set_box_size(esmd_t *md, areal x, areal y, areal z){
@@ -29,14 +30,7 @@ void esmd_box_setup_global(esmd_t *md){
   box->rlcell[0] = 1. / box->lcell[0];
   box->rlcell[1] = 1. / box->lcell[1];
   box->rlcell[2] = 1. / box->lcell[2];
-  debug("lcell: %f %f %f\n", box->lcell[0], box->lcell[1], box->lcell[2]);
 }
-
-
-/* inline areal min(areal a, areal b) { */
-/*   if (a < b) return a; */
-/*   return b; */
-/* } */
 
 inline int get_cell_type_1d(int idx, int nlocal){
   if (idx < 0 || idx >= nlocal) return CT_HALO;
@@ -126,4 +120,24 @@ void box_add_atom(box_t *box, areal *x, areal *v, ireal q, int type){
   celldata->f[curatom][1] = 0;
   celldata->f[curatom][2] = 0;
   cell->natoms ++;
+}
+
+void report_cell_info(esmd_t *md){
+  box_t *box = &(md->box);
+  int nmax = 0, nmin = 0x7fffffff, nsum = 0;
+  ESMD_CELL_ITER(box, {
+      if (cell->natoms > nmax) nmax = cell->natoms;
+      if (cell->natoms < nmin) nmin = cell->natoms;
+      nsum += cell->natoms;
+      //if (cell->natoms == 32) debug("%d %d %d %d %d\n", ii, jj, kk, cell->natoms, md->mpp.pid);
+    });
+  
+  int gbl_nmax, gbl_nmin, gbl_nsum;
+  MPI_Reduce(&nmax, &gbl_nmax, 1, MPI_INT, MPI_MAX, 0, md->mpp.comm);
+  MPI_Reduce(&nmin, &gbl_nmin, 1, MPI_INT, MPI_MIN, 0, md->mpp.comm);
+  MPI_Reduce(&nsum, &gbl_nsum, 1, MPI_INT, MPI_SUM, 0, md->mpp.comm);
+  double avg = gbl_nsum * 1.0 / (box->nglobal[0] * box->nglobal[1] * box->nglobal[2]);
+  if (md->mpp.pid == 0){
+    info("number of atoms per cell: avg=%f, min=%d, max=%d\n", avg, gbl_nmin, gbl_nmax);
+  }
 }
