@@ -98,6 +98,14 @@ pph_slot_is_empty(const void* slot){
 #define PPH_FREE free
 #endif
 
+#ifndef PPH_ON_DELETE
+#define PPH_ON_DELETE(x)
+#endif
+
+#ifndef PPH_ENTCPY
+#define PPH_ENTCPY(x, y) memcpy(x, y, sizeof(PPH_TYPE));
+#endif
+
 #define __CAT__(x, y) x ## _ ## y
 #define CAT(x, y) __CAT__(x, y)
 
@@ -235,6 +243,7 @@ CAT(PPH_NAME, insert)(htab_t *htab, PPH_TYPE **slot, PPH_TYPE *element){
 
 static inline void
 CAT(PPH_NAME, delete)(htab_t *htab, PPH_TYPE **slot){
+  PPH_ON_DELETE(*slot);
   *slot = HTAB_DELETED;
 }
 
@@ -244,18 +253,33 @@ CAT(PPH_NAME, pack)(htab_t *htab, PPH_TYPE *entries){
   PPH_TYPE **top = htab->slots + htab->cap, **slot;
   for (slot = htab->slots; slot != top; slot ++){
     if (*slot != HTAB_EMPTY && *slot != HTAB_DELETED) {
-      memcpy(entries + nrec_write, *slot, sizeof(PPH_TYPE));
+      PPH_ENTCPY(entries + nrec_write, *slot);
       nrec_write ++;
     }
-  }  
+  }
+  return nrec_write;
 }
 
+static inline void
+CAT(PPH_NAME, destroy)(htab_t *htab){
+  PPH_TYPE **top = htab->slots + htab->cap, **slot;
+  for (slot = htab->slots; slot != top; slot ++){
+    if (*slot != HTAB_EMPTY && *slot != HTAB_DELETED) {
+      PPH_ON_DELETE(*slot);
+    }
+  }
+  PPH_FREE(htab->slots);
+}
 #undef CAT
 #undef __CAT__
 #undef htab_t
+#ifdef PPH_ONETIME
 #undef PPH_NAME
 #undef PPH_HASH
 #undef PPH_TYPE
 #undef PPH_EQ
 #undef PPH_CALLOC
 #undef PPH_FREE
+#undef PPH_ON_DELETE
+#undef PPH_ENTCPY
+#endif

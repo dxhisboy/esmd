@@ -13,7 +13,7 @@
 #endif
 
 #ifndef CELL_SIZE
-#define CELL_SIZE 16
+#define CELL_SIZE 64
 #endif
 
 #ifndef MAX_TYPES
@@ -21,7 +21,7 @@
 #endif
 
 #ifndef NCELL_CUT
-#define NCELL_CUT 2
+#define NCELL_CUT 1
 #endif
 
 #ifndef NCELL_SKIN

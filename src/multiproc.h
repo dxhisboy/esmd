@@ -6,7 +6,6 @@ enum exchange_direction {
   LOCAL_TO_HALO = 0,
   HALO_TO_LOCAL = 1
 };
-extern int gbl_pid, gbl_np;
 //function signatures
 void init_halo_unordered(halo_t *halo, esmd_t *md, int dx, int dy, int dz);
 void init_comm_unordered(esmd_t *md);

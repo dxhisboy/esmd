@@ -3,9 +3,8 @@
 #include <util.h>
 #include <stdio.h>
 #include <assert.h>
-
+#include <timer.h>
 #include <multiproc.h>
-int gbl_pid, gbl_np;
 static inline int get_neighbor(esmd_t *md, int dx, int dy, int dz, areal *off) {
   multiproc_t *mpp = &(md->mpp);
   int neigh_x = mpp->pidx + dx;
@@ -166,8 +165,6 @@ void esmd_multiproc_part_cart(esmd_t *md, int npx, int npy, int npz, int pid){
   box->offset[2] = stz;
 
   init_comm_unordered(md);
-  gbl_pid = pid;
-  gbl_np = npx * npy * npz;
 }
 
 inline int proc_3d_to_flat(multiproc_t *mpp, int pidx, int pidy, int pidz){
@@ -192,9 +189,12 @@ void esmd_comm_finish(esmd_t *md, halo_t *halo, int dir, int fields, int flags){
   int off_x = halo->off[0][1 - dir], off_y = halo->off[1][1 - dir], off_z = halo->off[2][1 - dir];
   int len_x = halo->len[0], len_y = halo->len[1], len_z = halo->len[2];
   areal *trans = halo->translation;
-
+  timer_start("MPI_Wait");
   MPI_Wait(&halo->recv_req, &halo->recv_stat);
+  timer_stop("MPI_Wait");
+  timer_start("esmd_import_box");
   esmd_import_box(md, halo->recv_buf, fields, flags, off_x, off_y, off_z, len_x, len_y, len_z, trans);
+  timer_stop("esmd_import_box");
   MPI_Wait(&halo->send_req, &halo->send_stat);
 }
 
