@@ -6,7 +6,7 @@
 #include <pair_lj.h>
 #include <thermo.h>
 #include <timer.h>
-//#define DEBUG_THIS_FILE
+#define DEBUG_THIS_FILE
 #include <log.h>
 void initial_integrate_nve(esmd_t *md){
   box_t *box = &(md->box);
@@ -83,8 +83,8 @@ void esmd_export_atoms(esmd_t *md){
   areal *rmass = pair_conf->rmass;
   int total_export = 0;
   for (int kk = 0; kk < box->nlocal[2]; kk ++){
-    for (int ii = 0; ii < box->nlocal[0]; ii ++){
-      for (int jj = 0; jj < box->nlocal[1]; jj ++){
+    for (int jj = 0; jj < box->nlocal[1]; jj ++){
+      for (int ii = 0; ii < box->nlocal[0]; ii ++){
 
 	int cell_off = get_cell_off(box, ii, jj, kk);
 	cell_t *cell = box->cells + cell_off;
@@ -135,10 +135,31 @@ void esmd_export_atoms(esmd_t *md){
 	  type[i_new] = type[i];
 	  q[i_new] = q[i];
 	}
+	/* int nexport = CELL_SIZE - export_ptr; */
+	/* for (int i = 0; i < nexport; i ++){ */
+	/*   x[natoms_new + i][0] = x[export_ptr + i][0]; */
+	/*   x[natoms_new + i][1] = x[export_ptr + i][1]; */
+	/*   x[natoms_new + i][2] = x[export_ptr + i][2]; */
+	/*   f[natoms_new + i][0] = f[export_ptr + i][0]; */
+	/*   f[natoms_new + i][1] = f[export_ptr + i][1]; */
+	/*   f[natoms_new + i][2] = f[export_ptr + i][2]; */
+	/*   v[natoms_new + i][0] = v[export_ptr + i][0]; */
+	/*   v[natoms_new + i][1] = v[export_ptr + i][1]; */
+	/*   v[natoms_new + i][2] = v[export_ptr + i][2]; */
+	/*   type[natoms_new + i] = type[export_ptr + i]; */
+	/*   q[natoms_new + i] = q[export_ptr + i]; */
+	/* } */
+	/* memcpy(x[natoms_new], x[export_ptr], nexport * sizeof(areal) * 3); */
+	/* memcpy(f[natoms_new], f[export_ptr], nexport * sizeof(areal) * 3); */
+	/* memcpy(v[natoms_new], v[export_ptr], nexport * sizeof(areal) * 3); */
+	/* memcpy(q + natoms_new, q + export_ptr, nexport * sizeof(ireal)); */
+	/* memcpy(type + natoms_new, type + export_ptr, nexport * sizeof(int)); */
+	/* memcpy(export + natoms_new, export + export_ptr, nexport * sizeof(int)); */
 	total_export += CELL_SIZE - export_ptr;
 	cell->natoms = natoms_new;
+	//cell->nexport = nexport;
 	cell->export_ptr = export_ptr;
-	assert(export_ptr >= natoms_new);
+	//assert(export_ptr >= natoms_new + nexport);
       }
     }
   }
@@ -165,6 +186,10 @@ int esmd_import_atoms_pairwise(box_t *box, int self_off, int neigh_off) {
   int *export = data_neigh->export;
   int natoms_new = cell_self->natoms;
   for (int i = cell_neigh->export_ptr; i < CELL_SIZE; i ++){
+    //for (int i = cell_neigh->natoms; i < cell_neigh->natoms + cell_neigh->nexport; i ++){
+    //debug("%d %d\n", cell_neigh->nexport, CELL_SIZE - cell_neigh->export_ptr);
+    areal xe1 = xe[i][0], xe2 = xe[cell_neigh->export_ptr + i - cell_neigh->natoms][0];
+    //if (xe1 != xe2) debug("%d %d %d %f %f\n", i - cell_neigh->natoms, box->celltype[self_off], box->celltype[neigh_off], xe1, xe2);
     int cellx = floor(xe[i][0] * rlcell[0] + TINY) - box->offset[0];
     int celly = floor(xe[i][1] * rlcell[1] + TINY) - box->offset[1];
     int cellz = floor(xe[i][2] * rlcell[2] + TINY) - box->offset[2];
@@ -340,11 +365,9 @@ void integrate(esmd_t *md) {
   timer_start("compute");
   compute_kinetic_local(md);
   esmd_global_accumulate(md);
-  //debug("kinetic %f %f\n", md->accu_local.kinetic, md->accu_global.kinetic);
   thermo_compute(md);
   timer_stop("compute");
-  if (md->mpp.pid == 0)
-    info("eng: %f temp: %f press: %f\n", md->thermo.eng, md->thermo.temp, md->thermo.press);
+  master_info("step: %d eng: %f temp: %f press: %f\n", md->step, md->thermo.eng, md->thermo.temp, md->thermo.press);
   md->accu_local.virial = 0;
   md->accu_local.epot = 0;
   md->accu_local.kinetic = 0;
@@ -374,4 +397,5 @@ void integrate(esmd_t *md) {
   timer_start("final_integrate");
   final_integrate_nve(md);
   timer_stop("final_integrate");
+  md->step ++;
 }

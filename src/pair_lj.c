@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <math.h>
+#include <geometry.h>
 //#define DEBUG_THIS_FILE
 #include <log.h>
 
@@ -50,6 +51,7 @@ void pair_lj_force(esmd_t *md) {
   }
 
   double maxf = 0;
+  areal max_cut = md->pair_conf.cutoff;
   int total_int = 0;
   for (int kk = 0; kk < box->nlocal[2]; kk ++){
     for (int jj = 0; jj < box->nlocal[1]; jj ++){
@@ -85,9 +87,17 @@ void pair_lj_force(esmd_t *md) {
               if (dx == 0 && dy == 0 && dz == 0) {
                 self_interaction = 1;
               }
-
+	      areal (*bbox)[3] = cell_neigh->bbox_ideal;
+	      areal box_o[3], box_h[3];
+	      box_o[0] = 0.5 * (bbox[0][0] + bbox[1][0]);
+	      box_o[1] = 0.5 * (bbox[0][1] + bbox[1][1]);
+	      box_o[2] = 0.5 * (bbox[0][2] + bbox[1][2]);
+	      box_h[0] = 0.5 * (bbox[1][0] - bbox[0][0]);
+	      box_h[1] = 0.5 * (bbox[1][1] - bbox[0][1]);
+	      box_h[2] = 0.5 * (bbox[1][2] - bbox[0][2]);
               for (int i = 0; i < cell_self->natoms; i ++) {
                 int jtop = self_interaction ? i : cell_neigh->natoms;
+		if (dsq_atom_box(xi[i], box_o, box_h) >= max_cut) continue;
                 ireal *cutoff2_i = lj_param->cutoff2[ti[i]];
                 ireal *c6_i = lj_param->c6[ti[i]];
                 ireal *c12_i = lj_param->c12[ti[i]];

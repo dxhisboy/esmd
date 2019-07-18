@@ -37,7 +37,7 @@ typedef struct cellforce {
 
 typedef struct cell {
   areal bbox_ideal[2][3];
-  int natoms, export_ptr;
+  int natoms, nexport, export_ptr;
   int nreplicas;
   cellforce_t **replicas;
   celldata_t *data;
@@ -139,7 +139,7 @@ typedef struct esmd {
   enum unit_type utype;
   accumulate_t accu_local, accu_global;
   thermo_t thermo;
-  int natoms;
+  int natoms, step;
 } esmd_t;
 
 

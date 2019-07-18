@@ -3,9 +3,11 @@
 #include <string.h>
 #include <data.h>
 enum transfer_flags {
-  TRANS_ADJ_X = 1,
-  TRANS_INC_F = 2,
-  TRANS_TRUNC = 4
+  TRANS_ADJ_X   = 1,
+  TRANS_INC_F   = 2,
+  TRANS_ATOMS   = 4,
+  TRANS_EXPORTS = 8,
+  TRANS_ALL     = 16
 };
 #define max(a, b) ((a) > (b) ? (a) : (b))
 #define min(a, b) ((a) < (b) ? (a) : (b))

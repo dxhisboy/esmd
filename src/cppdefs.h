@@ -21,7 +21,7 @@
 #endif
 
 #ifndef NCELL_CUT
-#define NCELL_CUT 1
+#define NCELL_CUT 2
 #endif
 
 #ifndef NCELL_SKIN

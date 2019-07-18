@@ -16,7 +16,7 @@ int main(int argc, char **argv){
   timer_init();
   esmd_mpi_init(&md);
   //esmd_pair_setup(&md, 2.5);
-  areal cutoff = 2.5;
+  areal cutoff = 3.5;
   ireal epsilon = 1.0;
   ireal sigma = 1.0;
   ireal mass = 1.0;
@@ -27,7 +27,7 @@ int main(int argc, char **argv){
   lat_conf->atom_types = NULL;
   lat_conf->type = LAT_FCC;
   lat_conf->dens = 0.8442;
-  lat_conf->nx = 128;
+  lat_conf->nx = 32;
   lat_conf->ny = 32;
   lat_conf->nz = 32;
   
@@ -44,19 +44,21 @@ int main(int argc, char **argv){
   report_cell_info(&md);
   thermo_init(&md);
   scale_to_temp(&md, 1.44);
-
+  md.accu_local.virial = 0;
+  md.accu_local.epot = 0;
+  md.accu_local.kinetic = 0;
   esmd_exchange_cell(&md, LOCAL_TO_HALO, CELL_META | CELL_X | CELL_T, TRANS_ADJ_X);
   pair_lj_force(&md);
   esmd_exchange_cell(&md, HALO_TO_LOCAL, CELL_F, TRANS_INC_F);
   //return 0;
-  for (int i = 0; i < 10; i ++){
+  md.step = 0;
+  for (int i = 0; i < 100; i ++){
     timer_start("integrate");
     integrate(&md);
     timer_stop("integrate");
   }
   report_cell_info(&md);
 
-  //memory_print();
   timer_print(md.mpp.comm);
   MPI_Finalize();
   return 0;
