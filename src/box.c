@@ -129,7 +129,6 @@ void report_cell_info(esmd_t *md){
       if (cell->natoms > nmax) nmax = cell->natoms;
       if (cell->natoms < nmin) nmin = cell->natoms;
       nsum += cell->natoms;
-      //if (cell->natoms == 32) debug("%d %d %d %d %d\n", ii, jj, kk, cell->natoms, md->mpp.pid);
     });
   
   int gbl_nmax, gbl_nmin, gbl_nsum;

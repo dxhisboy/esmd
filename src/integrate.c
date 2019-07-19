@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <pair_lj.h>
 #include <thermo.h>
+#include <loops.h>
 #include <timer.h>
 //#define DEBUG_THIS_FILE
 #include <log.h>
@@ -192,37 +193,29 @@ int esmd_import_atoms_code(box_t *box, int self_off, int neigh_off, int icode) {
 void esmd_import_atoms(esmd_t *md){
   timer_start("import_atoms");
   box_t *box = &(md->box);
-  for (int kk = 0; kk < box->nlocal[2]; kk ++){
-    for (int jj = 0; jj < box->nlocal[1]; jj ++){
-      for (int ii = 0; ii < box->nlocal[0]; ii ++){
-	int cell_off = get_cell_off(box, ii, jj, kk);
-	for (int dz = -1; dz <= 1; dz ++) {
-	  for (int dy = -1; dy <= 1; dy ++){
-	    for (int dx = -1; dx <= 1; dx ++){
-	      int icode = dx * (-1) + dy * (-3) + dz * (-9);
-	      int neigh_off = get_cell_off(box, ii + dx, jj + dy, kk + dz);
-	      //esmd_import_atoms_pairwise(box, cell_off, neigh_off);
-	      esmd_import_atoms_code(box, cell_off, neigh_off, icode);
-	    }
+  ESMD_CELL_ITER(box, {
+      for (int dz = -1; dz <= 1; dz ++) {
+	for (int dy = -1; dy <= 1; dy ++){
+	  for (int dx = -1; dx <= 1; dx ++){
+	    int icode = dx * (-1) + dy * (-3) + dz * (-9);
+	    int neighoff = get_cell_off(box, ii + dx, jj + dy, kk + dz);
+	    esmd_import_atoms_code(box, celloff, neighoff, icode);
 	  }
 	}
-	
       }
-    }
-  }
+    });
   timer_stop("import_atoms");
 }
 
 void integrate(esmd_t *md) {
-  timer_start("compute");
-  
-  compute_kinetic_local(md);
-  esmd_global_accumulate(md);
-  thermo_compute(md);
-  
-  timer_stop("compute");
-  master_info("step: %d eng: %f temp: %f press: %f\n", md->step, md->thermo.eng, md->thermo.temp, md->thermo.press);
-  
+  if (md->step % md->nthermo == 0){
+    timer_start("compute");
+    compute_kinetic_local(md);
+    esmd_global_accumulate(md);
+    thermo_compute(md);
+    timer_stop("compute");
+    master_info("step: %d eng: %f temp: %f press: %f\n", md->step, md->thermo.eng, md->thermo.temp, md->thermo.press);
+  }
   md->accu_local.virial = 0;
   md->accu_local.epot = 0;
   md->accu_local.kinetic = 0;
@@ -236,9 +229,10 @@ void integrate(esmd_t *md) {
   esmd_import_atoms(md);
   
   esmd_exchange_cell(md, LOCAL_TO_HALO, CELL_META | CELL_X | CELL_T | CELL_V, TRANS_ADJ_X | TRANS_ATOMS);
-  
-  pair_lj_force(md);
-  
+  int evflag = 0;
+  if ((md->step + 1) % md->nthermo == 0) evflag = 3;
+  pair_lj_force(md, evflag);
+
   esmd_exchange_cell(md, HALO_TO_LOCAL, CELL_META | CELL_F, TRANS_INC_F | TRANS_ATOMS);
   
   //esmd_exchange_cell(md, LOCAL_TO_HALO, CELL_F);

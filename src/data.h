@@ -139,7 +139,7 @@ typedef struct esmd {
   enum unit_type utype;
   accumulate_t accu_local, accu_global;
   thermo_t thermo;
-  int natoms, step;
+  int natoms, step, nthermo;
 } esmd_t;
 
 

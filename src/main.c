@@ -27,8 +27,8 @@ int main(int argc, char **argv){
   lat_conf->atom_types = NULL;
   lat_conf->type = LAT_FCC;
   lat_conf->dens = 0.8442;
-  lat_conf->nx = 32;
-  lat_conf->ny = 32;
+  lat_conf->nx = 64;
+  lat_conf->ny = 64;
   lat_conf->nz = 32;
   
   md.utype = UNIT_LJ;
@@ -47,8 +47,9 @@ int main(int argc, char **argv){
   md.accu_local.virial = 0;
   md.accu_local.epot = 0;
   md.accu_local.kinetic = 0;
+  md.nthermo = 5;
   esmd_exchange_cell(&md, LOCAL_TO_HALO, CELL_META | CELL_X | CELL_T, TRANS_ADJ_X);
-  pair_lj_force(&md);
+  pair_lj_force(&md, 3);
   esmd_exchange_cell(&md, HALO_TO_LOCAL, CELL_F, TRANS_INC_F);
   //return 0;
   md.step = 0;
