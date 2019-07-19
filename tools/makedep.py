@@ -3,6 +3,7 @@ import os
 import json
 import time
 INCLUDE_RE = re.compile('\\s*#include\\s*((<(?P<sysinc>.*)>)|("(?P<usrinc>.*)"))')
+TEMPLATE_RE = re.compile('\\s*#define\\s*TEMPLATE\\s*((<(?P<sysinc>.*)>)|("(?P<usrinc>.*)"))')
 src_suffix = set([".c", ".h"])
 
 def target_name(f):
@@ -24,7 +25,7 @@ def find_includes(f, incmap, srcpath):
         return
     incmap[f] = set([])
     for line in open(find_file(f, srcpath)):
-        m = INCLUDE_RE.match(line)
+        m = INCLUDE_RE.match(line) or TEMPLATE_RE.match(line)
         if m:
             groups = m.groupdict()
             inc = groups['sysinc'] or groups['usrinc']
