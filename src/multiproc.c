@@ -233,8 +233,8 @@ void esmd_comm_start(esmd_t *md, MPI_Comm comm, halo_t *halo, int dir, int field
   int len_x = halo->len[0], len_y = halo->len[1], len_z = halo->len[2];
 
   MPI_Irecv(halo->recv_buf, comm_size, MPI_CHAR, neigh, halo->recv_tag, comm, &halo->recv_req);
-  esmd_export_box(md, halo->send_buf, fields, flags, off_x, off_y, off_z, len_x, len_y, len_z);
-  MPI_Isend(halo->send_buf, comm_size, MPI_CHAR, neigh, halo->send_tag, comm, &halo->send_req);
+  size_t nbytes = esmd_export_box(md, halo->send_buf, fields, flags, off_x, off_y, off_z, len_x, len_y, len_z);
+  MPI_Isend(halo->send_buf, nbytes, MPI_CHAR, neigh, halo->send_tag, comm, &halo->send_req);
 }
 
 void esmd_comm_finish(esmd_t *md, halo_t *halo, int dir, int fields, int flags){

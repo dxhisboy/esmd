@@ -15,9 +15,9 @@ enum transfer_flags {
 
 //function signatures
 size_t esmd_fields_size(int fields);
-void esmd_export_cell(esmd_t *md, void *target, int fields, int flags, int celloff);
-void esmd_import_cell(esmd_t *md, void *source, int fields, int flags, int celloff, areal *off);
-size_t esmd_export_box(esmd_t *md, void *target, int fields, int flags, int xlo, int ylo, int zlo, int xlen, int ylen, int zlen);
-size_t esmd_import_box(esmd_t *md, void *target, int fields, int flags,  int xlo, int ylo, int zlo, int xlen, int ylen, int zlen, areal *off);
+int esmd_export_cell(esmd_t *md, void *buffer, int fields, int flags, int celloff);
+int esmd_import_cell(esmd_t *md, void *buffer, int fields, int flags, int celloff, areal *off);
+size_t esmd_export_box(esmd_t *md, void *buffer, int fields, int flags, int xlo, int ylo, int zlo, int xlen, int ylen, int zlen);
+size_t esmd_import_box(esmd_t *md, void *buffer, int fields, int flags,  int xlo, int ylo, int zlo, int xlen, int ylen, int zlen, areal *off);
 //end function signatures
 #endif

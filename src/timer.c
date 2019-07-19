@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#define DEBUG_THIS_FILE
+#include <log.h>
 inline long current_usec(){
   struct timeval tv;
   gettimeofday(&tv, NULL);
@@ -130,10 +132,13 @@ static void timer_allreduce(timertab_t *gbl_timertab, MPI_Comm comm){
   timerec_t *ent_send = esmd_malloc(sizeof(timerec_t) * gbl_n, "perf reduce ent");
   for (int stride = 1; stride < np; stride += stride) {
     if (me & stride){
-      int nrec = timertab_pack(&timertab, ent_send);
+      debug("%d send-\n", me);
+      int nrec = timertab_pack(gbl_timertab, ent_send);
       MPI_Send(ent_send, sizeof(timerec_t) * nrec, MPI_CHAR, me - stride, 400, comm);
+      debug("%d send\n", me);
       break;
-    } else {
+    } else if (me + stride < np){
+      debug("%d recv-\n", me);
       MPI_Status stat;
       MPI_Recv(ent_recv, sizeof(timerec_t) * gbl_n, MPI_CHAR, me + stride, 400, comm, &stat);
       int recv_count;
@@ -142,6 +147,11 @@ static void timer_allreduce(timertab_t *gbl_timertab, MPI_Comm comm){
       for (int i = 0; i < nrec; i ++){
 	merge_timer(ent_recv + i, gbl_timertab);
       }
+      /* if (me == 0){ */
+      /* 	timerec_t **slot = timertab_find_slot(gbl_timertab, (const timerec_t*)("force")); */
+      /* 	debug("%d\n", (*slot)->cnt.sum); */
+      /* } */
+      debug("%d recv\n", me);
     }
   }
   esmd_free(ent_recv);

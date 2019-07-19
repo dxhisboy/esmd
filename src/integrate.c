@@ -6,7 +6,7 @@
 #include <pair_lj.h>
 #include <thermo.h>
 #include <timer.h>
-#define DEBUG_THIS_FILE
+//#define DEBUG_THIS_FILE
 #include <log.h>
 void initial_integrate_nve(esmd_t *md){
   box_t *box = &(md->box);
@@ -349,7 +349,7 @@ void esmd_import_atoms(esmd_t *md){
 	for (int dz = -1; dz <= 1; dz ++) {
 	  for (int dx = -1; dx <= 1; dx ++){
 	    for (int dy = -1; dy <= 1; dy ++){
-
+	      
 	      int neigh_off = get_cell_off(box, ii + dx, jj + dy, kk + dz);
 	      esmd_import_atoms_pairwise(box, cell_off, neigh_off);
 	    }
@@ -363,36 +363,44 @@ void esmd_import_atoms(esmd_t *md){
 
 void integrate(esmd_t *md) {
   timer_start("compute");
+  
   compute_kinetic_local(md);
   esmd_global_accumulate(md);
   thermo_compute(md);
+  
   timer_stop("compute");
   master_info("step: %d eng: %f temp: %f press: %f\n", md->step, md->thermo.eng, md->thermo.temp, md->thermo.press);
+  
   md->accu_local.virial = 0;
   md->accu_local.epot = 0;
   md->accu_local.kinetic = 0;
+  
   timer_start("init_integrate");
   initial_integrate_nve(md);
   timer_stop("init_integrate");
-  timer_start("export_import");
+  
+  timer_start("export");
   esmd_export_atoms(md);
-  esmd_import_atoms_outer_from_local(md);
-  esmd_import_atoms_inner_from_local(md);
-  timer_stop("export_import");
+  timer_stop("export");
+  
   timer_start("comm_l2h");
-  esmd_exchange_cell(md, LOCAL_TO_HALO, CELL_META | CELL_X | CELL_T | CELL_E | CELL_V, TRANS_ADJ_X);
+  esmd_exchange_cell(md, LOCAL_TO_HALO, CELL_META | CELL_X | CELL_T | CELL_V, TRANS_ADJ_X | TRANS_EXPORTS);
   timer_stop("comm_l2h");
+  
   timer_start("ac_import");
-  esmd_import_atoms_halo_from_local(md);
-  esmd_import_atoms_outer_from_halo(md);
+  esmd_import_atoms(md);
   timer_stop("ac_import");
-  /* esmd_exchange_cell(md, LOCAL_TO_HALO, CELL_META | CELL_X | CELL_T | CELL_E | CELL_V, TRANS_ADJ_X); */
+  
+  esmd_exchange_cell(md, LOCAL_TO_HALO, CELL_META | CELL_X | CELL_T | CELL_V, TRANS_ADJ_X | TRANS_ATOMS);
+  
   timer_start("force");
   pair_lj_force(md);
   timer_stop("force");
+  
   timer_start("comm_h2l");
-  esmd_exchange_cell(md, HALO_TO_LOCAL, CELL_F, TRANS_INC_F);
+  esmd_exchange_cell(md, HALO_TO_LOCAL, CELL_META | CELL_F, TRANS_INC_F | TRANS_ATOMS);
   timer_stop("comm_h2l");
+  
   //esmd_exchange_cell(md, LOCAL_TO_HALO, CELL_F);
   timer_start("final_integrate");
   final_integrate_nve(md);

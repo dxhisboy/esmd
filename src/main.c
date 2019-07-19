@@ -16,7 +16,7 @@ int main(int argc, char **argv){
   timer_init();
   esmd_mpi_init(&md);
   //esmd_pair_setup(&md, 2.5);
-  areal cutoff = 3.5;
+  areal cutoff = 2.5;
   ireal epsilon = 1.0;
   ireal sigma = 1.0;
   ireal mass = 1.0;

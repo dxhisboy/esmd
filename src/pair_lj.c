@@ -51,7 +51,7 @@ void pair_lj_force(esmd_t *md) {
   }
 
   double maxf = 0;
-  areal max_cut = md->pair_conf.cutoff;
+  areal max_cut2 = md->pair_conf.cutoff * md->pair_conf.cutoff;
   int total_int = 0;
   for (int kk = 0; kk < box->nlocal[2]; kk ++){
     for (int jj = 0; jj < box->nlocal[1]; jj ++){
@@ -97,7 +97,7 @@ void pair_lj_force(esmd_t *md) {
 	      box_h[2] = 0.5 * (bbox[1][2] - bbox[0][2]);
               for (int i = 0; i < cell_self->natoms; i ++) {
                 int jtop = self_interaction ? i : cell_neigh->natoms;
-		if (dsq_atom_box(xi[i], box_o, box_h) >= max_cut) continue;
+		if (dsq_atom_box(xi[i], box_o, box_h) >= max_cut2) continue;
                 ireal *cutoff2_i = lj_param->cutoff2[ti[i]];
                 ireal *c6_i = lj_param->c6[ti[i]];
                 ireal *c12_i = lj_param->c12[ti[i]];
@@ -109,7 +109,7 @@ void pair_lj_force(esmd_t *md) {
                   ireal dely = xj[j][1] - xi[i][1];
                   ireal delz = xj[j][2] - xi[i][2];
                   ireal r2 = delx * delx + dely * dely + delz * delz;
-                  if (r2 < cutoff2_i[jtype] - TINY) {
+                  if (r2 < cutoff2_i[jtype]) {
                     total_int += 2;
                     ireal r2inv = 1.0 / r2;
                     ireal r6inv = r2inv * r2inv * r2inv;
