@@ -1,5 +1,6 @@
 #include <data.h>
 #include <util.h>
+#include <timer.h>
 #define add_size(fcode, size) if (fields & fcode) accu_size += (size);
 size_t esmd_fields_size(int fields) {
   size_t accu_size = 0;
@@ -121,6 +122,7 @@ int esmd_import_cell(esmd_t *md, void *buffer, int fields, int flags, int cellof
 }
 
 size_t esmd_export_box(esmd_t *md, void *buffer, int fields, int flags, int xlo, int ylo, int zlo, int xlen, int ylen, int zlen){
+  timer_start("esmd_export_box");
   box_t *box = &(md->box);
   size_t entry_size = esmd_fields_size(fields);
   size_t bufoff = 0;
@@ -132,11 +134,13 @@ size_t esmd_export_box(esmd_t *md, void *buffer, int fields, int flags, int xlo,
       }
     }
   }
+  timer_stop("esmd_export_box");
   return bufoff;
   //return entry_size * xlen * ylen * zlen;
 }
 
 size_t esmd_import_box(esmd_t *md, void *buffer, int fields, int flags,  int xlo, int ylo, int zlo, int xlen, int ylen, int zlen, areal *off){
+  timer_start("esmd_import_box");
   box_t *box = &(md->box);
   int entry_size = esmd_fields_size(fields);
   size_t bufoff = 0;
@@ -148,6 +152,7 @@ size_t esmd_import_box(esmd_t *md, void *buffer, int fields, int flags,  int xlo
       }
     }
   }
+  timer_stop("esmd_import_box");
   return bufoff;
   //return entry_size * xlen * ylen * zlen;
 }

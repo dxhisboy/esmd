@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <math.h>
 #include <geometry.h>
+#include <timer.h>
 //#define DEBUG_THIS_FILE
 #include <log.h>
 
@@ -29,6 +30,7 @@ void pair_lj_setup(esmd_t *md, areal *cutoff, ireal *epsilon, ireal *sigma, irea
 }
 
 void pair_lj_force(esmd_t *md) {
+  timer_start("force");
   box_t *box = &(md->box);
   lj_param_t *lj_param = &(md->pair_conf.lj_param);
   areal evdwl = 0;
@@ -135,6 +137,7 @@ void pair_lj_force(esmd_t *md) {
   }
   md->accu_local.epot += evdwl;
   md->accu_local.virial += virial;
+  timer_stop("force");
 #ifdef DEBUG_THIS_FILE
   areal evdwl_gbl;
   esmd_global_sum_scalar(md, &evdwl_gbl, evdwl);

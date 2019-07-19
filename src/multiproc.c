@@ -244,13 +244,12 @@ void esmd_comm_finish(esmd_t *md, halo_t *halo, int dir, int fields, int flags){
   timer_start("MPI_Wait");
   MPI_Wait(&halo->recv_req, &halo->recv_stat);
   timer_stop("MPI_Wait");
-  timer_start("esmd_import_box");
   esmd_import_box(md, halo->recv_buf, fields, flags, off_x, off_y, off_z, len_x, len_y, len_z, trans);
-  timer_stop("esmd_import_box");
   MPI_Wait(&halo->send_req, &halo->send_stat);
 }
 
 void esmd_exchange_cell(esmd_t *md, int direction, int fields, int flags) {
+  timer_start("comm");
   for (int i = 0; i < 26; i ++){
     //printf("%d\n", md->mpp.halo[i].neighbor);
     esmd_comm_start(md, md->mpp.comm, md->mpp.halo + i, direction, fields, flags);
@@ -258,6 +257,7 @@ void esmd_exchange_cell(esmd_t *md, int direction, int fields, int flags) {
   for (int i = 0; i < 26; i ++){
     esmd_comm_finish(md, md->mpp.halo + i, direction, fields, flags);
   }
+  timer_stop("comm");
 }
 void esmd_exchange_cell_ordered(esmd_t *md, int direction, int fields, int flags) {
   multiproc_t *mpp = &(md->mpp);

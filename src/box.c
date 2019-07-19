@@ -137,7 +137,6 @@ void report_cell_info(esmd_t *md){
   MPI_Reduce(&nmin, &gbl_nmin, 1, MPI_INT, MPI_MIN, 0, md->mpp.comm);
   MPI_Reduce(&nsum, &gbl_nsum, 1, MPI_INT, MPI_SUM, 0, md->mpp.comm);
   double avg = gbl_nsum * 1.0 / (box->nglobal[0] * box->nglobal[1] * box->nglobal[2]);
-  if (md->mpp.pid == 0){
-    info("number of atoms per cell: avg=%f, min=%d, max=%d\n", avg, gbl_nmin, gbl_nmax);
-  }
+  master_info("#atoms/cell: avg=%f, min=%d, max=%d\n", avg, gbl_nmin, gbl_nmax);
+  master_info("total atoms: %d\n", gbl_nsum);
 }

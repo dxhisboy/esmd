@@ -99,7 +99,7 @@ static void merge_timer(timerec_t *timer, void *gbl) {
       gbl_timer->time.min = timer->time.min;
       gbl_timer->time.argmin = timer->time.argmin;
     }
-    if (timer->time.max < gbl_timer->time.max){
+    if (timer->time.max > gbl_timer->time.max){
       gbl_timer->time.max = timer->time.max;
       gbl_timer->time.argmax = timer->time.argmax;
     }
@@ -109,7 +109,7 @@ static void merge_timer(timerec_t *timer, void *gbl) {
       gbl_timer->cnt.min = timer->cnt.min;
       gbl_timer->cnt.argmin = timer->cnt.argmin;
     }
-    if (timer->cnt.max < gbl_timer->cnt.max){
+    if (timer->cnt.max > gbl_timer->cnt.max){
       gbl_timer->cnt.max = timer->cnt.max;
       gbl_timer->cnt.argmax = timer->cnt.argmax;
     }

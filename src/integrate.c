@@ -9,6 +9,7 @@
 //#define DEBUG_THIS_FILE
 #include <log.h>
 void initial_integrate_nve(esmd_t *md){
+  timer_start("init_integrate");
   box_t *box = &(md->box);
   integrate_conf_t *integrate_conf = &(md->integrate_conf);
   pair_conf_t *pair_conf = &(md->pair_conf);
@@ -19,7 +20,6 @@ void initial_integrate_nve(esmd_t *md){
   for (int kk = 0; kk < box->nlocal[2]; kk ++){
     for (int jj = 0; jj < box->nlocal[1]; jj ++){
       for (int ii = 0; ii < box->nlocal[0]; ii ++){
-
 
         int cell_off = get_cell_off(box, ii, jj, kk);
         cell_t *cell = box->cells + cell_off;
@@ -40,10 +40,12 @@ void initial_integrate_nve(esmd_t *md){
       }
     }
   }
+  timer_stop("init_integrate");
   //debug("totalv = %g\n", totalv);
 }
 
 void final_integrate_nve(esmd_t *md){
+  timer_start("final_integrate");
   box_t *box = &(md->box);
   integrate_conf_t *integrate_conf = &(md->integrate_conf);
   pair_conf_t *pair_conf = &(md->pair_conf);
@@ -70,10 +72,12 @@ void final_integrate_nve(esmd_t *md){
     }
   }
   debug("totalv = %g\n", totalv);
+  timer_stop("final_integrate");
 }
 
 #include <data.h>
 void esmd_export_atoms(esmd_t *md){
+  timer_start("export_atoms");
   box_t *box = &(md->box);
   areal *rlcell = box->rlcell;
   integrate_conf_t *integrate_conf = &(md->integrate_conf);
@@ -95,30 +99,28 @@ void esmd_export_atoms(esmd_t *md){
 	areal *q = data->q;
 	int *export = data->export;
 	int *type = data->type;
-
+	areal bbox[2][3];
+	bbox[0][0] = cell->bbox_ideal[0][0] - TINY;
+	bbox[0][1] = cell->bbox_ideal[0][1] + TINY;
+	bbox[0][2] = cell->bbox_ideal[0][2] - TINY;
+	bbox[1][0] = cell->bbox_ideal[1][0] + TINY;
+	bbox[1][1] = cell->bbox_ideal[1][1] - TINY;
+	bbox[1][2] = cell->bbox_ideal[1][2] + TINY;
+	
 	int natoms_new = 0, export_ptr = CELL_SIZE;
 	for (int i = 0; i < cell->natoms; i ++){
-	  /* if (x[i][0] < 0) x[i][0] += box->lglobal[0]; */
-	  /* if (x[i][1] < 0) x[i][1] += box->lglobal[1]; */
-	  /* if (x[i][2] < 0) x[i][2] += box->lglobal[2]; */
-	  /* if (x[i][0] > box->lglobal[0]) x[i][0] -= box->lglobal[0]; */
-	  /* if (x[i][1] > box->lglobal[1]) x[i][1] -= box->lglobal[1]; */
-	  /* if (x[i][2] > box->lglobal[2]) x[i][2] -= box->lglobal[2]; */
-	  int cellx = floor(x[i][0] * rlcell[0] + TINY) - box->offset[0];
-	  int celly = floor(x[i][1] * rlcell[1] + TINY) - box->offset[1];
-	  int cellz = floor(x[i][2] * rlcell[2] + TINY) - box->offset[2];
-	  /* if (cellx >= box->nglobal[0]) cellx -= box->nglobal[0]; */
-	  /* if (celly >= box->nglobal[1]) celly -= box->nglobal[1]; */
-	  /* if (cellz >= box->nglobal[2]) cellz -= box->nglobal[2]; */
-	  /* if (cellx < 0) cellx += box->nglobal[0]; */
-	  /* if (celly < 0) celly += box->nglobal[1]; */
-	  /* if (cellz < 0) cellz += box->nglobal[2]; */
-	  int new_cell_off = get_cell_off(box, cellx, celly, cellz);
+	  int ecode = 0;
+	  if (x[i][0] < bbox[0][0]) ecode -= 1;
+	  else if (x[i][0] > bbox[1][0]) ecode += 1;
+	  if (x[i][1] < bbox[0][1]) ecode -= 3;
+	  else if (x[i][1] > bbox[1][1]) ecode += 3;
+	  if (x[i][2] < bbox[0][2]) ecode -= 9;
+	  else if (x[i][2] > bbox[1][2]) ecode += 9;
+
 	  int i_new;
-	  if (cell_off != new_cell_off){
+	  if (ecode != 0) {
 	    export_ptr --;
 	    i_new = export_ptr;
-	    export[i_new] = new_cell_off;
 	  } else {
 	    i_new = natoms_new;
 	    natoms_new ++;
@@ -134,39 +136,20 @@ void esmd_export_atoms(esmd_t *md){
 	  v[i_new][2] = v[i][2];
 	  type[i_new] = type[i];
 	  q[i_new] = q[i];
+	  export[i_new] = ecode;
 	}
-	/* int nexport = CELL_SIZE - export_ptr; */
-	/* for (int i = 0; i < nexport; i ++){ */
-	/*   x[natoms_new + i][0] = x[export_ptr + i][0]; */
-	/*   x[natoms_new + i][1] = x[export_ptr + i][1]; */
-	/*   x[natoms_new + i][2] = x[export_ptr + i][2]; */
-	/*   f[natoms_new + i][0] = f[export_ptr + i][0]; */
-	/*   f[natoms_new + i][1] = f[export_ptr + i][1]; */
-	/*   f[natoms_new + i][2] = f[export_ptr + i][2]; */
-	/*   v[natoms_new + i][0] = v[export_ptr + i][0]; */
-	/*   v[natoms_new + i][1] = v[export_ptr + i][1]; */
-	/*   v[natoms_new + i][2] = v[export_ptr + i][2]; */
-	/*   type[natoms_new + i] = type[export_ptr + i]; */
-	/*   q[natoms_new + i] = q[export_ptr + i]; */
-	/* } */
-	/* memcpy(x[natoms_new], x[export_ptr], nexport * sizeof(areal) * 3); */
-	/* memcpy(f[natoms_new], f[export_ptr], nexport * sizeof(areal) * 3); */
-	/* memcpy(v[natoms_new], v[export_ptr], nexport * sizeof(areal) * 3); */
-	/* memcpy(q + natoms_new, q + export_ptr, nexport * sizeof(ireal)); */
-	/* memcpy(type + natoms_new, type + export_ptr, nexport * sizeof(int)); */
-	/* memcpy(export + natoms_new, export + export_ptr, nexport * sizeof(int)); */
+
 	total_export += CELL_SIZE - export_ptr;
 	cell->natoms = natoms_new;
-	//cell->nexport = nexport;
 	cell->export_ptr = export_ptr;
-	//assert(export_ptr >= natoms_new + nexport);
       }
     }
   }
+  timer_stop("export_atoms");
   debug("%d\n", total_export);
 }
 
-int esmd_import_atoms_pairwise(box_t *box, int self_off, int neigh_off) {
+int esmd_import_atoms_code(box_t *box, int self_off, int neigh_off, int icode) {
   cell_t *cell_self = box->cells + self_off;
   celldata_t *data_self = box->celldata + self_off;
   cell_t *cell_neigh = box->cells + neigh_off;
@@ -186,25 +169,10 @@ int esmd_import_atoms_pairwise(box_t *box, int self_off, int neigh_off) {
   int *export = data_neigh->export;
   int natoms_new = cell_self->natoms;
   for (int i = cell_neigh->export_ptr; i < CELL_SIZE; i ++){
-    //for (int i = cell_neigh->natoms; i < cell_neigh->natoms + cell_neigh->nexport; i ++){
-    //debug("%d %d\n", cell_neigh->nexport, CELL_SIZE - cell_neigh->export_ptr);
-    areal xe1 = xe[i][0], xe2 = xe[cell_neigh->export_ptr + i - cell_neigh->natoms][0];
-    //if (xe1 != xe2) debug("%d %d %d %f %f\n", i - cell_neigh->natoms, box->celltype[self_off], box->celltype[neigh_off], xe1, xe2);
-    int cellx = floor(xe[i][0] * rlcell[0] + TINY) - box->offset[0];
-    int celly = floor(xe[i][1] * rlcell[1] + TINY) - box->offset[1];
-    int cellz = floor(xe[i][2] * rlcell[2] + TINY) - box->offset[2];
-    int import_off = get_cell_off(box, cellx, celly, cellz);
-    if (import_off == self_off){
+    if (export[i] == icode){
       x[natoms_new][0] = xe[i][0];
       x[natoms_new][1] = xe[i][1];
       x[natoms_new][2] = xe[i][2];
-      int safe = (xe[i][0] >= cell_self->bbox_ideal[0][0] && xe[i][0] <= cell_self->bbox_ideal[1][0] &&
-		  xe[i][1] >= cell_self->bbox_ideal[0][1] && xe[i][1] <= cell_self->bbox_ideal[1][1] &&
-		  xe[i][2] >= cell_self->bbox_ideal[0][2] && xe[i][2] <= cell_self->bbox_ideal[1][2]);
-      if (!safe){
-	debug("%d unsafely imported %f %f %f\n", self_off, x[natoms_new][0], x[natoms_new][1], x[natoms_new][2]);
-      }
- 
       f[natoms_new][0] = fe[i][0];
       f[natoms_new][1] = fe[i][1];
       f[natoms_new][2] = fe[i][2];
@@ -222,17 +190,19 @@ int esmd_import_atoms_pairwise(box_t *box, int self_off, int neigh_off) {
 }
 
 void esmd_import_atoms(esmd_t *md){
+  timer_start("import_atoms");
   box_t *box = &(md->box);
   for (int kk = 0; kk < box->nlocal[2]; kk ++){
     for (int jj = 0; jj < box->nlocal[1]; jj ++){
       for (int ii = 0; ii < box->nlocal[0]; ii ++){
 	int cell_off = get_cell_off(box, ii, jj, kk);
 	for (int dz = -1; dz <= 1; dz ++) {
-	  for (int dx = -1; dx <= 1; dx ++){
-	    for (int dy = -1; dy <= 1; dy ++){
-	      
+	  for (int dy = -1; dy <= 1; dy ++){
+	    for (int dx = -1; dx <= 1; dx ++){
+	      int icode = dx * (-1) + dy * (-3) + dz * (-9);
 	      int neigh_off = get_cell_off(box, ii + dx, jj + dy, kk + dz);
-	      esmd_import_atoms_pairwise(box, cell_off, neigh_off);
+	      //esmd_import_atoms_pairwise(box, cell_off, neigh_off);
+	      esmd_import_atoms_code(box, cell_off, neigh_off, icode);
 	    }
 	  }
 	}
@@ -240,6 +210,7 @@ void esmd_import_atoms(esmd_t *md){
       }
     }
   }
+  timer_stop("import_atoms");
 }
 
 void integrate(esmd_t *md) {
@@ -256,35 +227,21 @@ void integrate(esmd_t *md) {
   md->accu_local.epot = 0;
   md->accu_local.kinetic = 0;
   
-  timer_start("init_integrate");
   initial_integrate_nve(md);
-  timer_stop("init_integrate");
   
-  timer_start("export");
   esmd_export_atoms(md);
-  timer_stop("export");
   
-  timer_start("comm_l2h");
-  esmd_exchange_cell(md, LOCAL_TO_HALO, CELL_META | CELL_X | CELL_T | CELL_V, TRANS_ADJ_X | TRANS_EXPORTS);
-  timer_stop("comm_l2h");
+  esmd_exchange_cell(md, LOCAL_TO_HALO, CELL_META | CELL_X | CELL_T | CELL_V | CELL_E, TRANS_ADJ_X | TRANS_EXPORTS);
   
-  timer_start("ac_import");
   esmd_import_atoms(md);
-  timer_stop("ac_import");
   
   esmd_exchange_cell(md, LOCAL_TO_HALO, CELL_META | CELL_X | CELL_T | CELL_V, TRANS_ADJ_X | TRANS_ATOMS);
   
-  timer_start("force");
   pair_lj_force(md);
-  timer_stop("force");
   
-  timer_start("comm_h2l");
   esmd_exchange_cell(md, HALO_TO_LOCAL, CELL_META | CELL_F, TRANS_INC_F | TRANS_ATOMS);
-  timer_stop("comm_h2l");
   
   //esmd_exchange_cell(md, LOCAL_TO_HALO, CELL_F);
-  timer_start("final_integrate");
   final_integrate_nve(md);
-  timer_stop("final_integrate");
   md->step ++;
 }
