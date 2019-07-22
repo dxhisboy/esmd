@@ -17,7 +17,7 @@
 #endif
 
 #ifndef MAX_TYPES
-#define MAX_TYPES 16
+#define MAX_TYPES 8
 #endif
 
 #ifndef NCELL_CUT

@@ -32,12 +32,12 @@ inline int export_data(void *buffer, cell_t *cell, celldata_t *data,
   return offset;
 }
 int esmd_export_cell(esmd_t *md, void *buffer, int fields, int flags, int celloff){
-  cell_t *cell = md->box.cells + celloff;
-  celldata_t *data = md->box.celldata + celloff;
+  cell_t *cell = md->box->cells + celloff;
+  celldata_t *data = md->box->celldata + celloff;
 
   size_t offset = 0;
   if (fields & CELL_META) {
-    esmd_memcpy(buffer, md->box.cells + celloff, sizeof(cell_t));
+    esmd_memcpy(buffer, md->box->cells + celloff, sizeof(cell_t));
     offset += sizeof(cell_t);
   }
 
@@ -95,18 +95,18 @@ inline int import_data(void *buffer, cell_t *cell, celldata_t *data,
   return offset;
 }
 int esmd_import_cell(esmd_t *md, void *buffer, int fields, int flags, int celloff, areal *off){
-  cell_t *cell = md->box.cells + celloff;
-  celldata_t *data = md->box.celldata + celloff;
+  cell_t *cell = md->box->cells + celloff;
+  celldata_t *data = md->box->celldata + celloff;
   size_t offset = 0;
   if (fields & CELL_META) {
-    esmd_memcpy(md->box.cells + celloff, buffer, sizeof(cell_t));
+    esmd_memcpy(md->box->cells + celloff, buffer, sizeof(cell_t));
     offset += sizeof(cell_t);
-    md->box.cells[celloff].bbox_ideal[0][0] += off[0];
-    md->box.cells[celloff].bbox_ideal[0][1] += off[1];
-    md->box.cells[celloff].bbox_ideal[0][2] += off[2];
-    md->box.cells[celloff].bbox_ideal[1][0] += off[0];
-    md->box.cells[celloff].bbox_ideal[1][1] += off[1];
-    md->box.cells[celloff].bbox_ideal[1][2] += off[2];
+    md->box->cells[celloff].bbox_ideal[0][0] += off[0];
+    md->box->cells[celloff].bbox_ideal[0][1] += off[1];
+    md->box->cells[celloff].bbox_ideal[0][2] += off[2];
+    md->box->cells[celloff].bbox_ideal[1][0] += off[0];
+    md->box->cells[celloff].bbox_ideal[1][1] += off[1];
+    md->box->cells[celloff].bbox_ideal[1][2] += off[2];
   }
   if (flags & (TRANS_ATOMS | TRANS_EXPORTS)) {
     if (flags & TRANS_ATOMS){
@@ -123,7 +123,7 @@ int esmd_import_cell(esmd_t *md, void *buffer, int fields, int flags, int cellof
 
 size_t esmd_export_box(esmd_t *md, void *buffer, int fields, int flags, int xlo, int ylo, int zlo, int xlen, int ylen, int zlen){
   timer_start("esmd_export_box");
-  box_t *box = &(md->box);
+  box_t *box = md->box;
   size_t entry_size = esmd_fields_size(fields);
   size_t bufoff = 0;
   for (int k = zlo; k < zlo + zlen; k ++){
@@ -141,7 +141,7 @@ size_t esmd_export_box(esmd_t *md, void *buffer, int fields, int flags, int xlo,
 
 size_t esmd_import_box(esmd_t *md, void *buffer, int fields, int flags,  int xlo, int ylo, int zlo, int xlen, int ylen, int zlen, areal *off){
   timer_start("esmd_import_box");
-  box_t *box = &(md->box);
+  box_t *box = md->box;
   int entry_size = esmd_fields_size(fields);
   size_t bufoff = 0;
   for (int k = zlo; k < zlo + zlen; k ++){

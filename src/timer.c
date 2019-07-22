@@ -158,7 +158,7 @@ static void timer_allreduce(timertab_t *gbl_timertab, MPI_Comm comm){
   esmd_free(ent_send);
 }
 
-static inline void timerec_print(timerec_t *timer, void *arg){
+inline void timerec_print(timerec_t *timer, void *arg){
   double avg = timer->time.sum * 1e-6 / timer->time.argn;
   long cnt = timer->cnt.sum;
   double max = timer->time.max * 1e-6;

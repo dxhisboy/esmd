@@ -133,8 +133,8 @@ typedef struct esmd {
   mempool_t force_pool;
   pair_conf_t pair_conf;
   integrate_conf_t integrate_conf;
-  box_t box;
-  multiproc_t mpp;
+  box_t *box;
+  multiproc_t *mpp;
   lattice_conf_t lat_conf;
   enum unit_type utype;
   accumulate_t accu_local, accu_global;

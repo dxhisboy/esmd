@@ -4,7 +4,7 @@
 #include <multiproc.h>
 #include <log.h>
 double temperature(esmd_t *md){
-  box_t *box = &(md->box);
+  box_t *box = md->box;
   areal mv2_tot = 0;
   ESMD_CELL_ITER(box, {
       for (int i = 0; i < cell->natoms; i ++){
@@ -18,7 +18,7 @@ double temperature(esmd_t *md){
 }
 
 double compute_kinetic_local(esmd_t *md){
-  box_t *box = &(md->box);
+  box_t *box = md->box;
   areal mv2_tot = 0;
   ESMD_CELL_ITER(box, {
       for (int i = 0; i < cell->natoms; i ++){
@@ -30,7 +30,7 @@ double compute_kinetic_local(esmd_t *md){
 }
 
 void thermo_init(esmd_t *md){
-  areal *lglobal = md->box.lglobal;
+  areal *lglobal = md->box->lglobal;
   if (md->utype == UNIT_LJ){
     md->thermo.t_scale = 1.0 / (md->natoms * 3 - 3);
     md->thermo.p_scale = 1.0 / 3 / (lglobal[0] * lglobal[1] * lglobal[2]);
@@ -47,7 +47,7 @@ void thermo_compute(esmd_t *md){
 }
 
 void scale_to_temp(esmd_t *md, areal t_req){
-  box_t *box = &(md->box);
+  box_t *box = md->box;
   areal t0 = temperature(md);
   ireal scale = sqrt(t_req / t0);
   ESMD_CELL_ITER(box, {

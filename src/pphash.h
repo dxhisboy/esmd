@@ -45,7 +45,7 @@ static struct prime_ent const prime_tab[] = {
   { 0xfffffffb, 0x00000006, 0x00000008, 31 }
 };
 
-static inline hashval_t
+inline hashval_t
 pph_hash_string(const char *s)
 {
   hashval_t ret = 0;
@@ -83,7 +83,7 @@ pph_hash_pointer (const void *p)
   return c;
 }
 
-static inline int
+inline int
 pph_slot_is_empty(const void* slot){
   const void *entry = *((void**)slot);
   return entry == HTAB_EMPTY || entry == HTAB_DELETED;
@@ -118,8 +118,8 @@ struct PPH_NAME {
 typedef struct PPH_NAME CAT(PPH_NAME, t);
 #define htab_t struct PPH_NAME
 //struct prime_ent p = {127, 0x02040811, 0x0624dd30, 6};
-static inline void CAT(PPH_NAME, check_cap)(htab_t *htab);
-static inline PPH_TYPE**
+inline void CAT(PPH_NAME, check_cap)(htab_t *htab);
+inline PPH_TYPE**
 CAT(PPH_NAME, find_slot_hash)(htab_t *htab, const PPH_TYPE *element, hashval_t hash)
 {
   CAT(PPH_NAME, check_cap)(htab);
@@ -154,12 +154,12 @@ CAT(PPH_NAME, find_slot_hash)(htab_t *htab, const PPH_TYPE *element, hashval_t h
   }
 }
 
-static inline PPH_TYPE**
+inline PPH_TYPE**
 CAT(PPH_NAME, find_slot)(htab_t *htab, const PPH_TYPE *element){
   hashval_t hv = PPH_HASH(element);
   return CAT(PPH_NAME, find_slot_hash)(htab, element, hv);
 }
-static inline PPH_TYPE*
+inline PPH_TYPE*
 CAT(PPH_NAME, find_entry)(htab_t *htab, const PPH_TYPE *element, hashval_t hash)
 {
   htab->nquery ++;
@@ -186,7 +186,7 @@ CAT(PPH_NAME, find_entry)(htab_t *htab, const PPH_TYPE *element, hashval_t hash)
   }
 }
 
-static inline PPH_TYPE*
+inline PPH_TYPE*
 CAT(PPH_NAME, init)(htab_t *htab, int initial_size)
 {
   htab->prime_cur = prime_tab;
@@ -200,7 +200,7 @@ CAT(PPH_NAME, init)(htab_t *htab, int initial_size)
   htab->slots = PPH_CALLOC(htab->cap, sizeof(PPH_TYPE*));
 }
 
-static inline void
+inline void
 CAT(PPH_NAME, traverse)(htab_t *htab, void (*callback)(PPH_TYPE*, void *), void *arg)
 {
   PPH_TYPE **top = htab->slots + htab->cap, **slot;
@@ -211,7 +211,7 @@ CAT(PPH_NAME, traverse)(htab_t *htab, void (*callback)(PPH_TYPE*, void *), void 
   }
 }
 
-static inline void
+inline void
 CAT(PPH_NAME, check_cap)(htab_t *htab){
   if (htab->cap * 3 < htab->cnt * 4){
     htab->prime_cur ++;
@@ -234,19 +234,19 @@ CAT(PPH_NAME, check_cap)(htab_t *htab){
   }
 }
 
-static inline void
+inline void
 CAT(PPH_NAME, insert)(htab_t *htab, PPH_TYPE **slot, PPH_TYPE *element){
   if (*slot == HTAB_EMPTY) htab->cnt ++;
   *slot = element;
 }
 
-static inline void
+inline void
 CAT(PPH_NAME, delete)(htab_t *htab, PPH_TYPE **slot){
   PPH_ON_DELETE(*slot);
   *slot = HTAB_DELETED;
 }
 
-static inline int
+inline int
 CAT(PPH_NAME, pack)(htab_t *htab, PPH_TYPE *entries){
   int nrec_write = 0;
   PPH_TYPE **top = htab->slots + htab->cap, **slot;
@@ -259,7 +259,7 @@ CAT(PPH_NAME, pack)(htab_t *htab, PPH_TYPE *entries){
   return nrec_write;
 }
 
-static inline void
+inline void
 CAT(PPH_NAME, destroy)(htab_t *htab){
   PPH_TYPE **top = htab->slots + htab->cap, **slot;
   for (slot = htab->slots; slot != top; slot ++){

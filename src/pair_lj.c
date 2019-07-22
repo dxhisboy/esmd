@@ -40,8 +40,8 @@ void pair_lj_force(esmd_t *md, int evflag) {
   areal evdwl_gbl;
   esmd_global_sum_scalar(md, &evdwl_gbl, evdwl);
 
-  if (md->mpp.pid == 0){
-    debug("%d %f %d %d\n", md->mpp.pid, evdwl_gbl, total_atoms, total_int);
+  if (md->mpp->pid == 0){
+    debug("%d %f %d %d\n", md->mpp->pid, evdwl_gbl, total_atoms, total_int);
   }
 #endif
 }

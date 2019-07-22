@@ -1,11 +1,13 @@
-void CAT(pair_lj_force, VER_CODE)(esmd_t *md) {
-  box_t *box = md->box;
+#include <slave.h>
+#include <dma_macros.h>
+void CAT(pair_lj_force, VER_CODE)(esmd_t *gl_md) {
+  box_t *box = &(md->box);
   lj_param_t *lj_param = &(md->pair_conf.lj_param);
   areal evdwl = 0;
   areal virial = 0;
   areal xi[CELL_SIZE][3], fi[CELL_SIZE][3], ti[CELL_SIZE][3];
   areal xj[CELL_SIZE][3], fj[CELL_SIZE][3], tj[CELL_SIZE][3];
-
+  memset(fi, 0, sizeof(areal) * CELL_SIZE * 3);
 
   for (int kk = -NCELL_CUT; kk < box->nlocal[2] + NCELL_CUT; kk ++){
     for (int jj = -NCELL_CUT; jj < box->nlocal[1] + NCELL_CUT; jj ++){

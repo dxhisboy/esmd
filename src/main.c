@@ -9,10 +9,14 @@
 #include <timer.h>
 #include <thermo.h>
 #include <lattice.h>
+#define DEBUG_THIS_FILE
 #include <log.h>
 int main(int argc, char **argv){
   esmd_t md;
   memory_init();
+  md.box = esmd_malloc(sizeof(box_t), "box meta");
+  md.mpp = esmd_malloc(sizeof(multiproc_t), "mpi meta");
+
   timer_init();
   esmd_mpi_init(&md);
   //esmd_pair_setup(&md, 2.5);
@@ -27,18 +31,24 @@ int main(int argc, char **argv){
   lat_conf->atom_types = NULL;
   lat_conf->type = LAT_FCC;
   lat_conf->dens = 0.8442;
-  lat_conf->nx = 64;
-  lat_conf->ny = 64;
+  lat_conf->nx = 32;
+  lat_conf->ny = 32;
   lat_conf->nz = 32;
   
   md.utype = UNIT_LJ;
 
   esmd_lattice_scale(&md, lat_conf);
+
+  debug("sizeof md: %ld\n", sizeof(md));
+  debug("sizeof box: %ld\n", sizeof(md.box));
+  debug("sizeof pair_conf: %ld\n", sizeof(md.pair_conf));
   esmd_set_box_size_by_lattice(&md);
+  master_info("box size is %f %f %f\n", md.box->lglobal[0], md.box->lglobal[1], md.box->lglobal[2]);
+  master_info("lattice scale is %f\n", lat_conf->scale);
   esmd_box_setup_global(&md);
   esmd_auto_part(&md);
   esmd_multiproc_part(&md);
-  master_info("divided tasks to %d*%d*%d grid\n", md.mpp.npx, md.mpp.npy, md.mpp.npz);
+  master_info("divided tasks to %d*%d*%d grid\n", md.mpp->npx, md.mpp->npy, md.mpp->npz);
   esmd_box_setup_local(&md);
   esmd_create_atoms_by_lattice(&md);
   report_cell_info(&md);
@@ -60,7 +70,7 @@ int main(int argc, char **argv){
   }
   report_cell_info(&md);
 
-  timer_print(md.mpp.comm);
+  timer_print(md.mpp->comm);
   MPI_Finalize();
   return 0;
 }

@@ -17,50 +17,50 @@ int master_fprintf(FILE *file, const char *fmt, ...) {
   }
   return ret;
 }
-static inline int get_neighbor(esmd_t *md, int dx, int dy, int dz, areal *off) {
-  multiproc_t *mpp = &(md->mpp);
+inline int get_neighbor(esmd_t *md, int dx, int dy, int dz, areal *off) {
+  multiproc_t *mpp = md->mpp;
   int neigh_x = mpp->pidx + dx;
   int neigh_y = mpp->pidy + dy;
   int neigh_z = mpp->pidz + dz;
   off[0] = off[1] = off[2] = 0;
   if (neigh_x < 0) {
     neigh_x += mpp->npx;
-    off[0] = -md->box.lglobal[0];
+    off[0] = -md->box->lglobal[0];
   }
   if (neigh_x >= mpp->npx) {
     neigh_x -= mpp->npx;
-    off[0] = md->box.lglobal[0];
+    off[0] = md->box->lglobal[0];
   }
   if (neigh_y < 0) {
     neigh_y += mpp->npy;
-    off[1] = -md->box.lglobal[1];
+    off[1] = -md->box->lglobal[1];
   }
   if (neigh_y >= mpp->npy) {
     neigh_y -= mpp->npy;
-    off[1] = md->box.lglobal[1];
+    off[1] = md->box->lglobal[1];
   }
   if (neigh_z < 0) {
     neigh_z += mpp->npz;
-    off[2] = -md->box.lglobal[2];
+    off[2] = -md->box->lglobal[2];
   }
   if (neigh_z >= mpp->npz) {
     neigh_z -= mpp->npz;
-    off[2] = md->box.lglobal[2];
+    off[2] = md->box->lglobal[2];
   }
   return (neigh_x * mpp->npy + neigh_y) * mpp->npz + neigh_z;
 }
 
 void esmd_mpi_init(esmd_t *md){
   MPI_Init(NULL, NULL);
-  md->mpp.comm = MPI_COMM_WORLD;
-  MPI_Comm_rank(MPI_COMM_WORLD, &(md->mpp.pid));
+  md->mpp->comm = MPI_COMM_WORLD;
+  MPI_Comm_rank(MPI_COMM_WORLD, &(md->mpp->pid));
 }
 
 void esmd_auto_part(esmd_t *md){
   int np, me;
-  MPI_Comm_rank(md->mpp.comm, &me);
-  MPI_Comm_size(md->mpp.comm, &np);
-  int *nglobal = md->box.nglobal;
+  MPI_Comm_rank(md->mpp->comm, &me);
+  MPI_Comm_size(md->mpp->comm, &np);
+  int *nglobal = md->box->nglobal;
   double best_bound = HUGE;
   int best_px, best_py, best_pz;
   double areaxy = nglobal[0] * nglobal[1];
@@ -84,12 +84,12 @@ void esmd_auto_part(esmd_t *md){
     }
   }
   assert(best_bound != HUGE);
-  md->mpp.npx = best_px;
-  md->mpp.npy = best_py;
-  md->mpp.npz = best_pz;
+  md->mpp->npx = best_px;
+  md->mpp->npy = best_py;
+  md->mpp->npz = best_pz;
 }
 
-static inline void part1d(int n, int np, int pid, int *start, int *count){
+inline void part1d(int n, int np, int pid, int *start, int *count){
   int pncell = n / np;
   int rncell = n % np;
   if (pid < rncell) {
@@ -101,20 +101,20 @@ static inline void part1d(int n, int np, int pid, int *start, int *count){
   }
 }
 
-static inline void init_halo_ordered(halo_t *halo, esmd_t *md, int dir, int del, void *send_buf, void *recv_buf) {
+inline void init_halo_ordered(halo_t *halo, esmd_t *md, int dir, int del, void *send_buf, void *recv_buf) {
   for (int i = 0; i < dir; i ++) {
     halo->off[i][0] = 0;
     halo->off[i][1] = 0;
-    halo->len[i] = md->box.nlocal[i];
+    halo->len[i] = md->box->nlocal[i];
   }
 
   for (int i = dir + 1; i < 3; i ++) {
     halo->off[i][0] = -NCELL_CUT;
     halo->off[i][1] = -NCELL_CUT;
-    halo->len[i] = md->box.nall[i];
+    halo->len[i] = md->box->nall[i];
   }
-  halo->off[dir][0] = del < 0 ? 0 : md->box.nlocal[dir] - NCELL_CUT;
-  halo->off[dir][1] = del < 0 ? -NCELL_CUT : md->box.nlocal[dir];
+  halo->off[dir][0] = del < 0 ? 0 : md->box->nlocal[dir] - NCELL_CUT;
+  halo->off[dir][1] = del < 0 ? -NCELL_CUT : md->box->nlocal[dir];
   halo->len[dir] = NCELL_CUT;
   halo->ncells = halo->len[0] * halo->len[1] * halo->len[2];
   int del3[3] = {0, 0, 0};
@@ -132,10 +132,10 @@ void init_halo_unordered(halo_t *halo, esmd_t *md, int dx, int dy, int dz) {
     if (d[i] == 0){
       halo->off[i][0] = 0;
       halo->off[i][1] = 0;
-      halo->len[i] = md->box.nlocal[i];
+      halo->len[i] = md->box->nlocal[i];
     } else {
-      halo->off[i][0] = (d[i] == -1) ? 0 : md->box.nlocal[i] - NCELL_CUT;
-      halo->off[i][1] = (d[i] == -1) ? -NCELL_CUT : md->box.nlocal[i];
+      halo->off[i][0] = (d[i] == -1) ? 0 : md->box->nlocal[i] - NCELL_CUT;
+      halo->off[i][1] = (d[i] == -1) ? -NCELL_CUT : md->box->nlocal[i];
       halo->len[i] = NCELL_CUT;
     }
   }
@@ -156,14 +156,14 @@ void init_comm_unordered(esmd_t *md){
     for (int dy = -1; dy <= 1; dy ++) {
       for (int dz = -1; dz <= 1; dz ++) {
         if (dx == 0 && dy == 0 && dz == 0) continue;
-        init_halo_unordered(md->mpp.halo + nhalo, md, dx, dy, dz);
+        init_halo_unordered(md->mpp->halo + nhalo, md, dx, dy, dz);
         nhalo ++;
       }
     }
   }
 }
 void init_comm_ordered(esmd_t *md){
-  int *nall = md->box.nall;
+  int *nall = md->box->nall;
   size_t max_entry_size = sizeof(cell_t) + sizeof(celldata_t);
   int max_comm_cells = max(nall[0] * nall[1], max(nall[1] * nall[2], nall[0] * nall[2])) * NCELL_CUT;
 
@@ -172,7 +172,7 @@ void init_comm_ordered(esmd_t *md){
   void *recv_buf_next = esmd_malloc(max_comm_cells * max_entry_size, "exchange_buffer");
   void *recv_buf_prev = esmd_malloc(max_comm_cells * max_entry_size, "exchange_buffer");
 
-  halo_t *halo = md->mpp.halo;
+  halo_t *halo = md->mpp->halo;
 
   init_halo_ordered(halo + 0, md, 0, -1, send_buf_prev, recv_buf_prev);      
   init_halo_ordered(halo + 1, md, 0,  1, send_buf_next, recv_buf_next);
@@ -183,22 +183,22 @@ void init_comm_ordered(esmd_t *md){
 }
 
 void esmd_multiproc_part(esmd_t *md){
-  int npx = md->mpp.npx;
-  int npy = md->mpp.npy;
-  int npz = md->mpp.npz;
-  int pid = md->mpp.pid;
-  box_t *box = &(md->box);
+  int npx = md->mpp->npx;
+  int npy = md->mpp->npy;
+  int npz = md->mpp->npz;
+  int pid = md->mpp->pid;
+  box_t *box = md->box;
   int pidx = pid / (npy * npz);
   int pidy = (pid - pidx * npy * npz) / npz;
   int pidz = pid - (pidx * npy + pidy) * npz;
   int pcellx = box->nglobal[0] / npx;
   int pcelly = box->nglobal[1] / npy;
   int pcellz = box->nglobal[2] / npz;
-  md->mpp.pidx = pidx;
-  md->mpp.pidy = pidy;
-  md->mpp.pidz = pidz;
-  md->mpp.pid = pid;
-  md->mpp.np   = npx * npy * npz;
+  md->mpp->pidx = pidx;
+  md->mpp->pidy = pidy;
+  md->mpp->pidz = pidz;
+  md->mpp->pid = pid;
+  md->mpp->np   = npx * npy * npz;
   int stx, cntx, sty, cnty, stz, cntz;
   part1d(box->nglobal[0], npx, pidx, &stx, &cntx);
   part1d(box->nglobal[1], npy, pidy, &sty, &cnty);
@@ -251,16 +251,16 @@ void esmd_comm_finish(esmd_t *md, halo_t *halo, int dir, int fields, int flags){
 void esmd_exchange_cell(esmd_t *md, int direction, int fields, int flags) {
   timer_start("comm");
   for (int i = 0; i < 26; i ++){
-    //printf("%d\n", md->mpp.halo[i].neighbor);
-    esmd_comm_start(md, md->mpp.comm, md->mpp.halo + i, direction, fields, flags);
+    //printf("%d\n", md->mpp->halo[i].neighbor);
+    esmd_comm_start(md, md->mpp->comm, md->mpp->halo + i, direction, fields, flags);
   }
   for (int i = 0; i < 26; i ++){
-    esmd_comm_finish(md, md->mpp.halo + i, direction, fields, flags);
+    esmd_comm_finish(md, md->mpp->halo + i, direction, fields, flags);
   }
   timer_stop("comm");
 }
 void esmd_exchange_cell_ordered(esmd_t *md, int direction, int fields, int flags) {
-  multiproc_t *mpp = &(md->mpp);
+  multiproc_t *mpp = md->mpp;
   if (direction == LOCAL_TO_HALO) {
     for (int i = 4; i >= 0; i -= 2){
       //printf("%d %d\n", mpp->halo[i + 0].neighbor, mpp->halo[i + 1].neighbor);
@@ -284,15 +284,15 @@ void esmd_exchange_cell_ordered(esmd_t *md, int direction, int fields, int flags
 
 void esmd_global_sum_vec(esmd_t *md, areal *result, areal *localvec){
   areal *vec = localvec;
-  MPI_Allreduce(localvec, result, 3, AREAL_MPI_TYPE, MPI_SUM, md->mpp.comm);
+  MPI_Allreduce(localvec, result, 3, AREAL_MPI_TYPE, MPI_SUM, md->mpp->comm);
 }
 
 void esmd_global_sum_scalar(esmd_t *md, areal *result, areal localval){
   areal val = localval;
-  MPI_Allreduce(&val, result, 1, AREAL_MPI_TYPE, MPI_SUM, md->mpp.comm);
+  MPI_Allreduce(&val, result, 1, AREAL_MPI_TYPE, MPI_SUM, md->mpp->comm);
 }
 
 void esmd_global_accumulate(esmd_t *md){
   int ncomp = sizeof(accumulate_t) / sizeof(areal);
-  MPI_Allreduce(&(md->accu_local), &(md->accu_global), ncomp, AREAL_MPI_TYPE, MPI_SUM, md->mpp.comm);
+  MPI_Allreduce(&(md->accu_local), &(md->accu_global), ncomp, AREAL_MPI_TYPE, MPI_SUM, md->mpp->comm);
 }

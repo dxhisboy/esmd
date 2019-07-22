@@ -69,15 +69,15 @@ void esmd_set_box_size_by_lattice(esmd_t *md){
   enum lattice_type type = conf->type;
   lattice_t *lat = lattices + type;
 
-  md->box.lglobal[0] = conf->nx * conf->scale * lat->lx;
-  md->box.lglobal[1] = conf->ny * conf->scale * lat->ly;
-  md->box.lglobal[2] = conf->nz * conf->scale * lat->lz;
+  md->box->lglobal[0] = conf->nx * conf->scale * lat->lx;
+  md->box->lglobal[1] = conf->ny * conf->scale * lat->ly;
+  md->box->lglobal[2] = conf->nz * conf->scale * lat->lz;
 }
 
 void esmd_create_atoms_by_lattice(esmd_t *md) {
   /* int lat_lo_x, lat_hi_x, lat_lo_y, lat_hi_y, lat_lo_z, lat_hi_z; */
   lattice_conf_t *conf = &(md->lat_conf);
-  box_t *box = &(md->box);
+  box_t *box = md->box;
   areal scale = conf->scale;
   enum lattice_type type = conf->type;
   lattice_t *lat = lattices + type;
@@ -87,9 +87,9 @@ void esmd_create_atoms_by_lattice(esmd_t *md) {
   int lat_lo_x = (int)floor(box->olocal[0] / (scale * lat->lx));
   int lat_lo_y = (int)floor(box->olocal[1] / (scale * lat->ly));
   int lat_lo_z = (int)floor(box->olocal[2] / (scale * lat->lz));
-  int lat_hi_x = (int)ceil((box->olocal[0] + box->llocal[0]) / (scale * lat->lx)) + 1;
-  int lat_hi_y = (int)ceil((box->olocal[1] + box->llocal[1]) / (scale * lat->ly)) + 1;
-  int lat_hi_z = (int)ceil((box->olocal[2] + box->llocal[2]) / (scale * lat->lz)) + 1;
+  int lat_hi_x = (int)ceil((box->olocal[0] + box->llocal[0]) / (scale * lat->lx));
+  int lat_hi_y = (int)ceil((box->olocal[1] + box->llocal[1]) / (scale * lat->ly));
+  int lat_hi_z = (int)ceil((box->olocal[2] + box->llocal[2]) / (scale * lat->lz));
 
   areal vtot[3];
   vtot[0] = 0;

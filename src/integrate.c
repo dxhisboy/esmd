@@ -11,7 +11,7 @@
 #include <log.h>
 void initial_integrate_nve(esmd_t *md){
   timer_start("init_integrate");
-  box_t *box = &(md->box);
+  box_t *box = md->box;
   integrate_conf_t *integrate_conf = &(md->integrate_conf);
   pair_conf_t *pair_conf = &(md->pair_conf);
   areal dt = integrate_conf->dt;
@@ -47,7 +47,7 @@ void initial_integrate_nve(esmd_t *md){
 
 void final_integrate_nve(esmd_t *md){
   timer_start("final_integrate");
-  box_t *box = &(md->box);
+  box_t *box = md->box;
   integrate_conf_t *integrate_conf = &(md->integrate_conf);
   pair_conf_t *pair_conf = &(md->pair_conf);
   areal dt = integrate_conf->dt;
@@ -79,7 +79,7 @@ void final_integrate_nve(esmd_t *md){
 #include <data.h>
 void esmd_export_atoms(esmd_t *md){
   timer_start("export_atoms");
-  box_t *box = &(md->box);
+  box_t *box = md->box;
   areal *rlcell = box->rlcell;
   integrate_conf_t *integrate_conf = &(md->integrate_conf);
   pair_conf_t *pair_conf = &(md->pair_conf);
@@ -192,7 +192,7 @@ int esmd_import_atoms_code(box_t *box, int self_off, int neigh_off, int icode) {
 
 void esmd_import_atoms(esmd_t *md){
   timer_start("import_atoms");
-  box_t *box = &(md->box);
+  box_t *box = md->box;
   ESMD_CELL_ITER(box, {
       for (int dz = -1; dz <= 1; dz ++) {
 	for (int dy = -1; dy <= 1; dy ++){

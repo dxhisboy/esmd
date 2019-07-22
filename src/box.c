@@ -8,13 +8,13 @@
 #include <log.h>
 
 void esmd_set_box_size(esmd_t *md, areal x, areal y, areal z){
-  box_t *box = &(md->box);
+  box_t *box = md->box;
   box->lglobal[0] = x;
   box->lglobal[1] = y;
   box->lglobal[2] = z;  
 }
 void esmd_box_setup_global(esmd_t *md){
-  box_t *box = &(md->box);
+  box_t *box = md->box;
   ireal lcell[3];
   
   ireal rlcell_max = (NCELL_CUT + NCELL_SKIN) / md->pair_conf.cutoff;
@@ -42,7 +42,7 @@ inline int get_cell_type_1d(int idx, int nlocal){
 
 void esmd_box_setup_local(esmd_t *md){
 
-  box_t *box = &(md->box);
+  box_t *box = md->box;
   
   int halo = NCELL_CUT;
 
@@ -107,7 +107,13 @@ void box_add_atom(box_t *box, areal *x, areal *v, ireal q, int type){
   int celloff = get_cell_off(box, ci, cj, ck);
   cell_t *cell = box->cells + celloff;
   celldata_t *celldata = box->celldata + celloff;
+  //printf("%p %d %d %d %d\n", celldata, celloff, ci, cj, ck);
   int curatom = cell->natoms;
+  if (curatom >= CELL_SIZE || curatom < 0){
+    error("%d\n", curatom);
+    error("%f %f %f %f\n", x[0] * rlcell[0], x[0], x[1], x[2]);
+    error("%p %d %d %d %d\n", celldata, celloff, ci, cj, ck);
+  }
   celldata->x[curatom][0] = x[0];
   celldata->x[curatom][1] = x[1];
   celldata->x[curatom][2] = x[2];
@@ -124,7 +130,7 @@ void box_add_atom(box_t *box, areal *x, areal *v, ireal q, int type){
 }
 
 void report_cell_info(esmd_t *md){
-  box_t *box = &(md->box);
+  box_t *box = md->box;
   int nmax = 0, nmin = 0x7fffffff, nsum = 0;
   ESMD_CELL_ITER(box, {
       if (cell->natoms > nmax) nmax = cell->natoms;
@@ -133,9 +139,9 @@ void report_cell_info(esmd_t *md){
     });
   
   int gbl_nmax, gbl_nmin, gbl_nsum;
-  MPI_Reduce(&nmax, &gbl_nmax, 1, MPI_INT, MPI_MAX, 0, md->mpp.comm);
-  MPI_Reduce(&nmin, &gbl_nmin, 1, MPI_INT, MPI_MIN, 0, md->mpp.comm);
-  MPI_Reduce(&nsum, &gbl_nsum, 1, MPI_INT, MPI_SUM, 0, md->mpp.comm);
+  MPI_Reduce(&nmax, &gbl_nmax, 1, MPI_INT, MPI_MAX, 0, md->mpp->comm);
+  MPI_Reduce(&nmin, &gbl_nmin, 1, MPI_INT, MPI_MIN, 0, md->mpp->comm);
+  MPI_Reduce(&nsum, &gbl_nsum, 1, MPI_INT, MPI_SUM, 0, md->mpp->comm);
   double avg = gbl_nsum * 1.0 / (box->nglobal[0] * box->nglobal[1] * box->nglobal[2]);
   master_info("#atoms/cell: avg=%f, min=%d, max=%d\n", avg, gbl_nmin, gbl_nmax);
   master_info("total atoms: %d\n", gbl_nsum);

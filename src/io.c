@@ -12,7 +12,7 @@ void load_raw_x_atoms(esmd_t *md, const char *path){
   double (*buffer)[3] = esmd_malloc(buffer_size, "load_raw_buffer");
   size_t count;
 
-  box_t *box = &(md->box);
+  box_t *box = md->box;
   double *rlcell = box->rlcell;
   while ((count = read(fd, buffer, buffer_size)) > 0) {
     int natoms = count / (3 * sizeof(double));
@@ -47,7 +47,7 @@ void load_raw_xv_atoms(esmd_t *md, const char *path){
   double (*buffer)[6] = esmd_malloc(buffer_size, "load_raw_buffer");
   size_t count;
 
-  box_t *box = &(md->box);
+  box_t *box = md->box;
   double *rlcell = box->rlcell;
   while ((count = read(fd, buffer, buffer_size)) > 0) {
     int natoms = count / (6 * sizeof(double));
@@ -80,7 +80,7 @@ void load_raw_xv_atoms(esmd_t *md, const char *path){
 }
 
 /* void print_atoms_x(esmd_t *md){ */
-/*   box_t *box = &(md->box); */
+/*   box_t *box = md->box-> */
 /*   for (int i = -NCELL_CUT; i < box->nlocal[0] + NCELL_CUT; i ++){ */
 /*     for (int j = -NCELL_CUT; j < box->nlocal[1] + NCELL_CUT; j ++){ */
 /*       for (int k = -NCELL_CUT; k < box->nlocal[2] + NCELL_CUT; k ++){ */
@@ -96,7 +96,7 @@ void load_raw_xv_atoms(esmd_t *md, const char *path){
 /* } */
 
 void print_atoms_f(esmd_t *md){
-  box_t *box = &(md->box);
+  box_t *box = md->box;
   for (int k = 0; k < box->nlocal[2]; k ++){
     for (int j = 0; j < box->nlocal[1]; j ++){
       for (int i = 0; i < box->nlocal[0]; i ++){
