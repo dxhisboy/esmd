@@ -1,3 +1,4 @@
+#include <math.h>
 #include <util.h>
 inline areal dsq_atom_box(areal *x, areal *box_o, areal *box_v){
   areal v[3], u[3];

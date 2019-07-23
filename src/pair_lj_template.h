@@ -1,6 +1,6 @@
 void CAT(pair_lj_force, VER_CODE)(esmd_t *md) {
   box_t *box = md->box;
-  lj_param_t *lj_param = &(md->pair_conf.lj_param);
+  lj_param_t *lj_param = &(md->pot_conf->param.lj);
   areal evdwl = 0;
   areal virial = 0;
   areal xi[CELL_SIZE][3], fi[CELL_SIZE][3], ti[CELL_SIZE][3];
@@ -22,7 +22,7 @@ void CAT(pair_lj_force, VER_CODE)(esmd_t *md) {
       }
     }
   }
-  areal max_cut2 = md->pair_conf.cutoff * md->pair_conf.cutoff;
+  areal max_cut2 = md->pot_conf->cutoff * md->pot_conf->cutoff;
   for (int kk = 0; kk < box->nlocal[2]; kk ++){
     for (int jj = 0; jj < box->nlocal[1]; jj ++){
       for (int ii = 0; ii < box->nlocal[0]; ii ++){   

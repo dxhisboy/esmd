@@ -17,7 +17,7 @@ void esmd_box_setup_global(esmd_t *md){
   box_t *box = md->box;
   ireal lcell[3];
   
-  ireal rlcell_max = (NCELL_CUT + NCELL_SKIN) / md->pair_conf.cutoff;
+  ireal rlcell_max = (NCELL_CUT + NCELL_SKIN) / md->pot_conf->cutoff;
   
   box->nglobal[0] = (int)floor(box->lglobal[0] * rlcell_max + TINY);
   box->nglobal[1] = (int)floor(box->lglobal[1] * rlcell_max + TINY);

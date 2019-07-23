@@ -16,6 +16,7 @@ int main(int argc, char **argv){
   memory_init();
   md.box = esmd_malloc(sizeof(box_t), "box meta");
   md.mpp = esmd_malloc(sizeof(multiproc_t), "mpi meta");
+  md.pot_conf = esmd_malloc(sizeof(potential_conf_t), "potential config");
 
   timer_init();
   esmd_mpi_init(&md);
@@ -24,7 +25,7 @@ int main(int argc, char **argv){
   ireal epsilon = 1.0;
   ireal sigma = 1.0;
   ireal mass = 1.0;
-  md.integrate_conf.dt = 0.005;
+  md.dt = 0.005;
   pair_lj_setup(&md, &cutoff, &epsilon, &sigma, &mass, 1);
   areal lg = 32 * pow((4.0 / 0.8442), (1.0 / 3.0));
   lattice_conf_t *lat_conf = &(md.lat_conf);
@@ -41,7 +42,7 @@ int main(int argc, char **argv){
 
   debug("sizeof md: %ld\n", sizeof(md));
   debug("sizeof box: %ld\n", sizeof(md.box));
-  debug("sizeof pair_conf: %ld\n", sizeof(md.pair_conf));
+  debug("sizeof pot_conf: %ld\n", sizeof(md.pot_conf));
   esmd_set_box_size_by_lattice(&md);
   master_info("box size is %f %f %f\n", md.box->lglobal[0], md.box->lglobal[1], md.box->lglobal[2]);
   master_info("lattice scale is %f\n", lat_conf->scale);

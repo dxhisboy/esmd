@@ -1,0 +1,16 @@
+#INCLUDES=-I/usr/include/libiberty
+#LIBS=-liberty
+CFLAGS=-O2 -std=gnu99 -finline-functions -Dinline="static inline" -OPT:IEEE_arith=2 -g
+CC=mpicc
+LD=mpicc
+SLAVE_CC=sw5cc -slave
+SLAVE_INCLUDE=-I/usr/sw-mpp/mpi2/include/
+%.o: mods-shenwei/%.c
+	$(SLAVE_CC) $(SRC_INC) $(INCLUDES) $(SLAVE_INCLUDE) $(CFLAGS) $(USER_CPPDEFS) $< -c -o $@.cpe.o -DCPE
+	$(CC) $(SRC_INC) $(INCLUDES) $(CFLAGS) $(USER_CPPDEFS) $< -c -o $@.mpe.o -DMPE
+	sw5ld -r $@.cpe.o $@.mpe.o -o $@
+%.o: %.c
+	$(CC) $(SRC_INC) $(INCLUDES) $(CFLAGS) $(USER_CPPDEFS) $< -c -o $@
+
+esmd: $(OBJS)
+	$(LD) $(LDFLAGS) $^ $(LIBS) -o $@

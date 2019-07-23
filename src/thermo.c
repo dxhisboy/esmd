@@ -8,7 +8,7 @@ double temperature(esmd_t *md){
   areal mv2_tot = 0;
   ESMD_CELL_ITER(box, {
       for (int i = 0; i < cell->natoms; i ++){
-	ireal mass = md->pair_conf.mass[type[i]];
+	ireal mass = md->pot_conf->mass[type[i]];
 	mv2_tot += v[i][0] * v[i][0] + v[i][1] * v[i][1] + v[i][2] * v[i][2] * mass;
       }
     });
@@ -22,7 +22,7 @@ double compute_kinetic_local(esmd_t *md){
   areal mv2_tot = 0;
   ESMD_CELL_ITER(box, {
       for (int i = 0; i < cell->natoms; i ++){
-	ireal mass = md->pair_conf.mass[type[i]];
+	ireal mass = md->pot_conf->mass[type[i]];
 	mv2_tot += v[i][0] * v[i][0] + v[i][1] * v[i][1] + v[i][2] * v[i][2] * mass;
       }
     });

@@ -27,29 +27,36 @@ try:
     blddir = os.path.join(caseroot, 'bld')
     histdir = os.path.join(blddir, "history")
     objdir = os.path.join(blddir, "obj")
-    tmpsrcdir = os.path.join(blddir, "src")
-    dirtygit = os.path.join(tmpsrcdir, ".git")
-    for d in [blddir, histdir, objdir, tmpsrcdir]:
+    gitsrcdir = os.path.join(blddir, "src")
+    dirtygit = os.path.join(gitsrcdir, ".git")
+    for d in [blddir, histdir, objdir, gitsrcdir]:
         if not os.path.exists(d):
             logger.info("%s does not exist, creating..." % d)
             os.makedirs(d)
 
     if not os.path.exists(dirtygit):
         logger.info("dirty git does not exist creating...")
-        vc.git_init(tmpsrcdir)
+        vc.git_init(gitsrcdir)
     bldlog = os.path.join(histdir, "bldlog.%s" % LID)
     loggers.add_file(bldlog)
 
     logger.info("copying files to temporary build directory")
     copied_src = set([])
-    for srcdir in [os.path.join(esmdroot, 'src'), os.path.join(caseroot, 'SourceMods')]:
+    srcpath = [os.path.join(esmdroot, 'src'), os.path.join(caseroot, 'SourceMods')]
+    platformsrc_path = []
+    for srcdir in srcpath:
+        subdir = os.path.join(srcdir, 'mods-%s' % case_vars["PLATFORM"])
+        if os.path.exists(subdir):
+            platformsrc_path.append(subdir)
+    srcpath.extend(platformsrc_path)
+    for srcdir in srcpath:
         for srcfile in os.listdir(srcdir):
             srcext = os.path.splitext(srcfile)[1]
             if srcext in [".c", ".h", ".i", ".s"]:
-                shutil.copy2(os.path.join(srcdir, srcfile), tmpsrcdir)
+                shutil.copy2(os.path.join(srcdir, srcfile), gitsrcdir)
                 copied_src.add(srcfile)
     logger.info("cleaning temporary build directory")
-    os.chdir(tmpsrcdir)
+    os.chdir(gitsrcdir)
     for srcfile in os.listdir():
         srcext = os.path.splitext(srcfile)[1]
         if srcext in [".c", ".h", ".i", ".s"]:
@@ -62,7 +69,6 @@ try:
     vc.git_commit("auto commit for build %s" % LID)
     logger.info("generating dependencies...")
     
-    srcpath = [tmpsrcdir]
     incmap = makedep.gen_incmap(srcpath)
     deps = makedep.export_deps(incmap)
     
@@ -75,9 +81,10 @@ try:
     
     #VPATH=../../src:../../SourceMods/ TOOLROOT=../../../../tools/ USER_CPPDEFS="-DTEST" PLATFORM=gcc_arch
     logger.info("setting environment vars...")
-    for var in ["TOOLROOT", "USER_CPPDEFS", "PLATFORM"]:
+    for var in ["USER_CPPDEFS", "PLATFORM"]:
         os.environ[var] = case_vars[var]
     os.environ["VPATH"] = ":".join(srcpath)
+    os.environ["SRCPATH"] = ":".join(srcpath)
     os.environ["BLDDIR"] = os.path.join(caseroot, "bld")
     os.environ["HISTDIR"] = histdir
     os.environ["LID"] = LID

@@ -12,11 +12,11 @@
 void initial_integrate_nve(esmd_t *md){
   timer_start("init_integrate");
   box_t *box = md->box;
-  integrate_conf_t *integrate_conf = &(md->integrate_conf);
-  pair_conf_t *pair_conf = &(md->pair_conf);
-  areal dt = integrate_conf->dt;
+  //integrate_conf_t *integrate_conf = &(md->integrate_conf);
+  potential_conf_t *pot_conf = md->pot_conf;
+  areal dt = md->dt;
   areal dtf = dt * 0.5;
-  areal *rmass = pair_conf->rmass;
+  areal *rmass = pot_conf->rmass;
   double totalv = 0;
   for (int kk = 0; kk < box->nlocal[2]; kk ++){
     for (int jj = 0; jj < box->nlocal[1]; jj ++){
@@ -48,11 +48,11 @@ void initial_integrate_nve(esmd_t *md){
 void final_integrate_nve(esmd_t *md){
   timer_start("final_integrate");
   box_t *box = md->box;
-  integrate_conf_t *integrate_conf = &(md->integrate_conf);
-  pair_conf_t *pair_conf = &(md->pair_conf);
-  areal dt = integrate_conf->dt;
+  //integrate_conf_t *integrate_conf = &(md->integrate_conf);
+  potential_conf_t *pot_conf = md->pot_conf;
+  areal dt = md->dt;
   areal dtf = dt * 0.5;
-  areal *rmass = pair_conf->rmass;
+  areal *rmass = pot_conf->rmass;
   double totalv = 0;
   for (int kk = 0; kk < box->nlocal[2]; kk ++){
     for (int jj = 0; jj < box->nlocal[1]; jj ++){
@@ -81,11 +81,11 @@ void esmd_export_atoms(esmd_t *md){
   timer_start("export_atoms");
   box_t *box = md->box;
   areal *rlcell = box->rlcell;
-  integrate_conf_t *integrate_conf = &(md->integrate_conf);
-  pair_conf_t *pair_conf = &(md->pair_conf);
-  areal dt = integrate_conf->dt;
+  //integrate_conf_t *integrate_conf = &(md->integrate_conf);
+  potential_conf_t *pot_conf = md->pot_conf;
+  areal dt = md->dt;
   areal dtf = dt * 0.5;
-  areal *rmass = pair_conf->rmass;
+  areal *rmass = pot_conf->rmass;
   int total_export = 0;
   for (int kk = 0; kk < box->nlocal[2]; kk ++){
     for (int jj = 0; jj < box->nlocal[1]; jj ++){

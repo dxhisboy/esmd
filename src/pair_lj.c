@@ -9,21 +9,21 @@
 
 void pair_lj_setup(esmd_t *md, areal *cutoff, ireal *epsilon, ireal *sigma, ireal *mass, int ntypes){
   assert(ntypes < MAX_TYPES);
-  md->pair_conf.cutoff = 0;
+  md->pot_conf->cutoff = 0;
   for (int i = 0; i < ntypes; i ++){
-    md->pair_conf.rmass[i] = 1.0 / mass[i];
-    md->pair_conf.mass[i] = mass[i];
+    md->pot_conf->rmass[i] = 1.0 / mass[i];
+    md->pot_conf->mass[i] = mass[i];
     for (int j = 0; j < ntypes; j ++){
       ireal sigma2 = sigma[i * ntypes + j] * sigma[i * ntypes + j];
       ireal sigma6 = sigma2 * sigma2 * sigma2;
       ireal sigma12 = sigma6 * sigma6;
-      md->pair_conf.lj_param.c6[i][j] = 4.0 * 6.0 * epsilon[i * ntypes + j] * sigma6;
-      md->pair_conf.lj_param.c12[i][j] = 4.0 * 12.0 * epsilon[i * ntypes + j] * sigma12;
-      md->pair_conf.lj_param.ec6[i][j] = 4.0 * epsilon[i * ntypes + j] * sigma6;
-      md->pair_conf.lj_param.ec12[i][j] = 4.0 * epsilon[i * ntypes + j] * sigma12;
-      md->pair_conf.lj_param.cutoff2[i][j] = cutoff[i * ntypes + j] * cutoff[i * ntypes + j];
-      if (cutoff[i * ntypes + j] > md->pair_conf.cutoff){
-        md->pair_conf.cutoff = cutoff[i * ntypes + j];
+      md->pot_conf->param.lj.c6[i][j] = 4.0 * 6.0 * epsilon[i * ntypes + j] * sigma6;
+      md->pot_conf->param.lj.c12[i][j] = 4.0 * 12.0 * epsilon[i * ntypes + j] * sigma12;
+      md->pot_conf->param.lj.ec6[i][j] = 4.0 * epsilon[i * ntypes + j] * sigma6;
+      md->pot_conf->param.lj.ec12[i][j] = 4.0 * epsilon[i * ntypes + j] * sigma12;
+      md->pot_conf->param.lj.cutoff2[i][j] = cutoff[i * ntypes + j] * cutoff[i * ntypes + j];
+      if (cutoff[i * ntypes + j] > md->pot_conf->cutoff){
+        md->pot_conf->cutoff = cutoff[i * ntypes + j];
       }
     }
   }

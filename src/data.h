@@ -2,7 +2,10 @@
 #define DATA_H_
 
 #include <cppdefs.h>
+#ifdef NOMPI
+#else
 #include <mpi.h>
+#endif
 typedef AREAL areal;
 typedef IREAL ireal;
 enum cell_fields {
@@ -29,7 +32,9 @@ typedef struct celldata {
   ireal q[CELL_SIZE];
 } celldata_t;
 
-#define CELL_DATA_XTQ_SIZE (sizeof(celldata_t) - ((celldata_t *)NULL).x)
+#define struct_off(type, field) ((size_t)(((type *)NULL).field))
+#define CELL_DATA_XT_SIZE (struct_off(celldata_t, q) - struct_off(celldata_t, x))
+#define CELL_DATA_XTQ_SIZE (sizeof(celldata_t) - struct_off(celldata_t, x))
 
 typedef struct cellforce {
   areal f[CELL_SIZE][3];
@@ -67,11 +72,13 @@ typedef struct lj_param {
   pair_table c6, c12, cutoff2, ec6, ec12;
 } lj_param_t;
 
-typedef struct pair_conf {
+typedef struct potential_conf {
   ireal cutoff;
-  lj_param_t lj_param;
+  union {
+    lj_param_t lj;
+  } param;
   type_table rmass, mass;
-} pair_conf_t;
+} potential_conf_t;
 
 enum integrate_type {
   FIX_NVE,
@@ -130,11 +137,12 @@ typedef struct thermo {
 
 #include <memory.h>
 typedef struct esmd {
-  mempool_t force_pool;
-  pair_conf_t pair_conf;
-  integrate_conf_t integrate_conf;
+  potential_conf_t *pot_conf;
   box_t *box;
   multiproc_t *mpp;
+  int fix_type;
+  areal dt;
+  //integrate_conf_t integrate_conf;
   lattice_conf_t lat_conf;
   enum unit_type utype;
   accumulate_t accu_local, accu_global;

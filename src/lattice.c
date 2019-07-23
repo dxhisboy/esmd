@@ -47,7 +47,7 @@ void esmd_lattice_scale(esmd_t *md, lattice_conf_t *conf){
   if (md->utype == UNIT_LJ){
     enum lattice_type type = conf->type;
     int *atom_types = conf->atom_types;
-    ireal *masses = md->pair_conf.mass;
+    ireal *masses = md->pot_conf->mass;
     
     lattice_t *lat = lattices + type;
     

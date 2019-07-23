@@ -1,6 +1,6 @@
 all: esmd
 
-SRC_INC=$(subst :, -I, :$(VPATH))
+SRC_INC=$(subst :, -I, :$(SRCPATH))
 include Depends
 include $(CASEROOT)/Macros
 
