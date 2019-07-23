@@ -20,7 +20,7 @@
 #undef VER_CODE
 
 #ifdef FUNCTION
-void (*pair_lj_force_vers[4])(esmd_t *) = {
+void (*CAT(FUNCTION, vers)[4])(esmd_t *) = {
   CAT(FUNCTION, 0),
   CAT(FUNCTION, 1),
   CAT(FUNCTION, 2),

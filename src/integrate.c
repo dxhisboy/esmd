@@ -231,7 +231,7 @@ void integrate(esmd_t *md) {
   esmd_exchange_cell(md, LOCAL_TO_HALO, CELL_META | CELL_X | CELL_T | CELL_V, TRANS_ADJ_X | TRANS_ATOMS);
   int evflag = 0;
   if ((md->step + 1) % md->nthermo == 0) evflag = 3;
-  pair_lj_force(md, evflag);
+  pair_lj_force_sw(md, evflag);
 
   esmd_exchange_cell(md, HALO_TO_LOCAL, CELL_META | CELL_F, TRANS_INC_F | TRANS_ATOMS);
   
