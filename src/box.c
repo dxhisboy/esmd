@@ -104,29 +104,35 @@ void box_add_atom(box_t *box, areal *x, areal *v, ireal q, int type){
   int ci = floor(x[0] * rlcell[0] + TINY) - box->offset[0];
   int cj = floor(x[1] * rlcell[1] + TINY) - box->offset[1];
   int ck = floor(x[2] * rlcell[2] + TINY) - box->offset[2];
-  int celloff = get_cell_off(box, ci, cj, ck);
-  cell_t *cell = box->cells + celloff;
-  celldata_t *celldata = box->celldata + celloff;
-  //printf("%p %d %d %d %d\n", celldata, celloff, ci, cj, ck);
-  int curatom = cell->natoms;
-  if (curatom >= CELL_SIZE || curatom < 0){
-    error("%d\n", curatom);
-    error("%f %f %f %f\n", x[0] * rlcell[0], x[0], x[1], x[2]);
-    error("%p %d %d %d %d\n", celldata, celloff, ci, cj, ck);
+  if (ci >= 0 && ci < box->nlocal[0] &&
+      cj >= 0 && cj < box->nlocal[1] &&
+      ck >= 0 && ck < box->nlocal[2]){
+
+    int celloff = get_cell_off(box, ci, cj, ck);
+    cell_t *cell = box->cells + celloff;
+    celldata_t *celldata = box->celldata + celloff;
+    //printf("%p %d %d %d %d\n", celldata, celloff, ci, cj, ck);
+    int curatom = cell->natoms;
+    if (curatom >= CELL_SIZE || curatom < 0){
+      error("%d\n", curatom);
+      error("%f %f %f %f\n", x[0] * rlcell[0], x[0], x[1], x[2]);
+      error("%p %d %d %d %d\n", celldata, celloff, ci, cj, ck);
+      error("%f %f %f\n", box->olocal[0], box->llocal[0], q);
+    }
+    celldata->x[curatom][0] = x[0];
+    celldata->x[curatom][1] = x[1];
+    celldata->x[curatom][2] = x[2];
+    celldata->v[curatom][0] = v[0];
+    celldata->v[curatom][1] = v[1];
+    celldata->v[curatom][2] = v[2];
+    //to be filled
+    celldata->type[curatom] = 0;
+    celldata->q[curatom] = q;
+    celldata->f[curatom][0] = 0;
+    celldata->f[curatom][1] = 0;
+    celldata->f[curatom][2] = 0;
+    cell->natoms ++;
   }
-  celldata->x[curatom][0] = x[0];
-  celldata->x[curatom][1] = x[1];
-  celldata->x[curatom][2] = x[2];
-  celldata->v[curatom][0] = v[0];
-  celldata->v[curatom][1] = v[1];
-  celldata->v[curatom][2] = v[2];
-  //to be filled
-  celldata->type[curatom] = 0;
-  celldata->q[curatom] = q;
-  celldata->f[curatom][0] = 0;
-  celldata->f[curatom][1] = 0;
-  celldata->f[curatom][2] = 0;
-  cell->natoms ++;
 }
 
 void report_cell_info(esmd_t *md){

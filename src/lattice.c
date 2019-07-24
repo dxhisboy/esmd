@@ -91,6 +91,13 @@ void esmd_create_atoms_by_lattice(esmd_t *md) {
   int lat_hi_y = (int)ceil((box->olocal[1] + box->llocal[1]) / (scale * lat->ly));
   int lat_hi_z = (int)ceil((box->olocal[2] + box->llocal[2]) / (scale * lat->lz));
 
+  lat_lo_x = max(0, lat_lo_x);
+  lat_lo_y = max(0, lat_lo_y);
+  lat_lo_z = max(0, lat_lo_z);
+
+  lat_hi_x = min(conf->nx, lat_hi_x);
+  lat_hi_y = min(conf->ny, lat_hi_y);
+  lat_hi_z = min(conf->nz, lat_hi_z);
   areal vtot[3];
   vtot[0] = 0;
   vtot[1] = 0;
@@ -104,9 +111,9 @@ void esmd_create_atoms_by_lattice(esmd_t *md) {
 	  x[0] = (ii * lat->lx + offset[io][0]) * scale;
 	  x[1] = (jj * lat->ly + offset[io][1]) * scale;
 	  x[2] = (kk * lat->lz + offset[io][2]) * scale;
-	  if (x[0] >= box->olocal[0] && x[0] < box->olocal[0] + box->llocal[0] &&
-	      x[1] >= box->olocal[1] && x[1] < box->olocal[1] + box->llocal[1] &&
-	      x[2] >= box->olocal[2] && x[2] < box->olocal[2] + box->llocal[2]){
+	  if (x[0] >= box->olocal[0] && x[0] < box->olocal[0] + box->llocal[0] - TINY &&
+	      x[1] >= box->olocal[1] && x[1] < box->olocal[1] + box->llocal[1] - TINY &&
+	      x[2] >= box->olocal[2] && x[2] < box->olocal[2] + box->llocal[2] - TINY){
 	    //this part follows the seeding strategy of minimd, to be changed
 	    int ri = (int)round((x[0] / scale) * 2);
 	    int rj = (int)round((x[1] / scale) * 2);
@@ -120,7 +127,8 @@ void esmd_create_atoms_by_lattice(esmd_t *md) {
 	    vtot[1] += v[1];
 	    vtot[2] += v[2];
 	  }
-	  box_add_atom(box, x, v, 0, 0);
+          areal bx = ii;
+	  box_add_atom(box, x, v, bx, 0);
 	}
       }
     }

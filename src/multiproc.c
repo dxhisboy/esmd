@@ -6,6 +6,7 @@
 #include <timer.h>
 #include <multiproc.h>
 #include <stdarg.h>
+#define PAD_SIZE 1024
 int master_fprintf(FILE *file, const char *fmt, ...) {
   int rank, ret = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -143,8 +144,8 @@ void init_halo_unordered(halo_t *halo, esmd_t *md, int dx, int dy, int dz) {
   halo->neighbor = get_neighbor(md, dx, dy, dz, halo->translation);
   //printf("%d %d %d %d %d %d %d %d\n", dx, dy, dz, halo->neighbor, halo->ncells, halo->len[0], halo->len[1], halo->len[2]);
   size_t max_entry_size = sizeof(cell_t) + sizeof(celldata_t);
-  halo->send_buf = esmd_malloc(halo->ncells * max_entry_size, "exchange_buffer");
-  halo->recv_buf = esmd_malloc(halo->ncells * max_entry_size, "exchange_buffer");
+  halo->send_buf = esmd_malloc(halo->ncells * max_entry_size + PAD_SIZE, "exchange_buffer");
+  halo->recv_buf = esmd_malloc(halo->ncells * max_entry_size + PAD_SIZE, "exchange_buffer");
   halo->send_tag = 200 + dx * 9 + dy * 3 + dz;
   halo->recv_tag = 200 - dx * 9 - dy * 3 - dz ;
     
@@ -233,7 +234,7 @@ void esmd_comm_start(esmd_t *md, MPI_Comm comm, halo_t *halo, int dir, int field
   int len_x = halo->len[0], len_y = halo->len[1], len_z = halo->len[2];
 
   MPI_Irecv(halo->recv_buf, comm_size, MPI_CHAR, neigh, halo->recv_tag, comm, &halo->recv_req);
-  size_t nbytes = esmd_export_box(md, halo->send_buf, fields, flags, off_x, off_y, off_z, len_x, len_y, len_z);
+  size_t nbytes = esmd_export_box_sw(md, halo->send_buf, fields, flags, off_x, off_y, off_z, len_x, len_y, len_z);
   MPI_Isend(halo->send_buf, nbytes, MPI_CHAR, neigh, halo->send_tag, comm, &halo->send_req);
 }
 
@@ -244,7 +245,7 @@ void esmd_comm_finish(esmd_t *md, halo_t *halo, int dir, int fields, int flags){
   timer_start("MPI_Wait");
   MPI_Wait(&halo->recv_req, &halo->recv_stat);
   timer_stop("MPI_Wait");
-  esmd_import_box(md, halo->recv_buf, fields, flags, off_x, off_y, off_z, len_x, len_y, len_z, trans);
+  esmd_import_box_sw(md, halo->recv_buf, fields, flags, off_x, off_y, off_z, len_x, len_y, len_z, trans);
   MPI_Wait(&halo->send_req, &halo->send_stat);
 }
 
@@ -257,6 +258,7 @@ void esmd_exchange_cell(esmd_t *md, int direction, int fields, int flags) {
   for (int i = 0; i < 26; i ++){
     esmd_comm_finish(md, md->mpp->halo + i, direction, fields, flags);
   }
+  //exit(1);
   timer_stop("comm");
 }
 void esmd_exchange_cell_ordered(esmd_t *md, int direction, int fields, int flags) {

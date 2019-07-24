@@ -46,6 +46,7 @@ int main(int argc, char **argv){
   debug("sizeof pot_conf: %ld\n", sizeof(md.pot_conf));
   esmd_set_box_size_by_lattice(&md);
   master_info("box size is %f %f %f\n", md.box->lglobal[0], md.box->lglobal[1], md.box->lglobal[2]);
+  master_info("cell size is %f %f %f\n", md.box->lcell[0], md.box->lcell[1], md.box->lcell[2]);
   master_info("lattice scale is %f\n", lat_conf->scale);
   esmd_box_setup_global(&md);
   esmd_auto_part(&md);
@@ -60,9 +61,9 @@ int main(int argc, char **argv){
   md.accu_local.epot = 0;
   md.accu_local.kinetic = 0;
   md.nthermo = 1;
-  esmd_exchange_cell(&md, LOCAL_TO_HALO, CELL_META | CELL_X | CELL_T, TRANS_ADJ_X);
+  esmd_exchange_cell(&md, LOCAL_TO_HALO, CELL_META | CELL_X | CELL_T, TRANS_ADJ_X | TRANS_ATOMS);
   pair_lj_force(&md, 3);
-  esmd_exchange_cell(&md, HALO_TO_LOCAL, CELL_F, TRANS_INC_F);
+  esmd_exchange_cell(&md, HALO_TO_LOCAL, CELL_F, TRANS_INC_F | TRANS_ATOMS);
   //return 0;
   md.step = 0;
   for (int i = 0; i < 10; i ++){
