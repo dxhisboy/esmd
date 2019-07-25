@@ -150,7 +150,7 @@ void esmd_export_atoms(esmd_t *md){
   debug("%d\n", total_export);
 }
 
-int esmd_import_atoms_code(box_t *box, int self_off, int neigh_off, int icode) {
+inline int esmd_import_atoms_code(box_t *box, int self_off, int neigh_off, int icode) {
   cell_t *cell_self = box->cells + self_off;
   celldata_t *data_self = box->celldata + self_off;
   cell_t *cell_neigh = box->cells + neigh_off;
@@ -199,7 +199,8 @@ void esmd_import_atoms(esmd_t *md){
 	  for (int dx = -1; dx <= 1; dx ++){
 	    int icode = dx * (-1) + dy * (-3) + dz * (-9);
 	    int neighoff = get_cell_off(box, ii + dx, jj + dy, kk + dz);
-	    esmd_import_atoms_code(box, celloff, neighoff, icode);
+            if ((1 << icode + 13) & box->cells[neighoff].emask)
+              esmd_import_atoms_code(box, celloff, neighoff, icode);
 	  }
 	}
       }
@@ -222,7 +223,7 @@ void integrate(esmd_t *md) {
   
   initial_integrate_nve_sw(md);
   
-  esmd_export_atoms(md);
+  esmd_export_atoms_sw(md);
   
   esmd_exchange_cell(md, LOCAL_TO_HALO, CELL_META | CELL_X | CELL_T | CELL_V | CELL_E, TRANS_ADJ_X | TRANS_EXPORTS);
   
@@ -236,6 +237,6 @@ void integrate(esmd_t *md) {
   esmd_exchange_cell(md, HALO_TO_LOCAL, CELL_F, TRANS_INC_F | TRANS_ATOMS);
   
   //esmd_exchange_cell(md, LOCAL_TO_HALO, CELL_F);
-  final_integrate_nve(md);
+  final_integrate_nve_sw(md);
   md->step ++;
 }

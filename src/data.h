@@ -43,7 +43,7 @@ typedef struct cellforce {
 typedef struct cell {
   areal bbox_ideal[2][3];
   int natoms, nexport, export_ptr;
-  int nreplicas;
+  int nreplicas, emask, padding;
   cellforce_t **replicas;
   celldata_t *data;
 } cell_t;

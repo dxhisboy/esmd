@@ -61,12 +61,12 @@ int main(int argc, char **argv){
   md.accu_local.virial = 0;
   md.accu_local.epot = 0;
   md.accu_local.kinetic = 0;
-  md.nthermo = 1;
+  md.nthermo = 10;
   esmd_exchange_cell(&md, LOCAL_TO_HALO, CELL_META | CELL_X | CELL_T, TRANS_ADJ_X | TRANS_ATOMS);
   pair_lj_force(&md, 3);
   esmd_exchange_cell(&md, HALO_TO_LOCAL, CELL_F, TRANS_INC_F | TRANS_ATOMS);
   //return 0;
-  md.step = 0;
+  md.step = 1;
   for (int i = 0; i < 10; i ++){
     timer_start("integrate");
     integrate(&md);

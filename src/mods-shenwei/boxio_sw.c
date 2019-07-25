@@ -300,11 +300,6 @@ void import_box_cpe(boxio_param_t *gl_pm){
       if (fields & CELL_E) import_void(data->export + off, sizeof(int) * cnt);
     }
   }
-  //cal_locked_printf("%d %d %d\n", _MYID, g_offset - BUF_SIZE + l_offset, g_offset_bak);
-  /* if (l_offset) { */
-  /*   pe_put(g_buf + g_offset, l_buf, l_offset); */
-  /*   dma_syn(); */
-  /* } */
 }
 #endif
 
@@ -347,9 +342,6 @@ estimate_io_size(esmd_t *md, int *offset_atoms, int *offset_cells, int flags,
     }
     offset_atoms[pe + 1] += offset_atoms[pe];
   }
-  /* for (int i = 0; i <= 64; i ++){ */
-  /*   debug("%d %d %d\n", ncells, offset_atoms[i], offset_cells[i]); */
-  /* } */
 }
 
 size_t esmd_export_box_sw(esmd_t *md, void *buffer, int fields, int flags, int xlo, int ylo, int zlo, int xlen, int ylen, int zlen){
@@ -374,16 +366,14 @@ size_t esmd_export_box_sw(esmd_t *md, void *buffer, int fields, int flags, int x
   ret += sizeof(int) * (NPES_IO + 1) * 2;
   athread_join();
   timer_stop("export_box_sw");
-  //printf("%ld %ld %ld %ld\n", ret, pm.offset_atoms[NPES_IO], pm.offset_cells[NPES_IO], estimate_atoms_size(fields));
   return ret;
 }
 
 size_t esmd_import_box_sw(esmd_t *md, void *buffer, int fields, int flags, int xlo, int ylo, int zlo, int xlen, int ylen, int zlen, areal *off){
   timer_start("import_box_sw");
   void *buffer_head = buffer + sizeof(int) * (NPES_IO + 1) * 2;
-  //esmd_import_box(md, buffer_head, fields, flags, xlo, ylo, zlo, xlen, ylen, zlen, off);
+
   boxio_param_t pm;
-  //estimate_io_size(md, pm.offset_atoms, pm.offset_cells, flags, xlo, ylo, zlo, xlen, ylen, zlen);
   memcpy(pm.offset_atoms, buffer, sizeof(int) * (NPES_IO + 1));
   memcpy(pm.offset_cells, buffer + sizeof(int) * (NPES_IO + 1), sizeof(int) * (NPES_IO + 1));
   pm.xlen = xlen;
@@ -398,44 +388,11 @@ size_t esmd_import_box_sw(esmd_t *md, void *buffer, int fields, int flags, int x
   pm.box = md->box;
   memcpy(pm.off, off, sizeof(areal) * 3);
   int celloff = get_cell_off(md->box, 0, 1, 0);
-  //esmd_import_box(md, buffer_head, fields, flags, xlo, ylo, zlo, xlen, ylen, zlen, off);
 
-  //if (md->mpp->pid == 0){
-  /* for (int i = 0; i <= 64; i ++) { */
-  /*   debug("%d %d %d\n", i, pm.offset_atoms[i], pm.offset_cells[i]); */
-  /* } */
-  /* box_t *box = md->box; */
-  /* int ncellall = box->nall[0] * box->nall[1] * box->nall[2]; */
-  /* cell_t *cell_backup = malloc(sizeof(cell_t) * ncellall), *cellptr = box->cells; */
-  /* celldata_t *celldata_backup = malloc(sizeof(celldata_t) * ncellall), *dataptr = box->celldata; */
-  /* memcpy(cell_backup, box->cells, sizeof(cell_t) * ncellall); */
-  /* memcpy(celldata_backup, box->celldata, sizeof(celldata_t) * ncellall); */
-  /* box->cells = cell_backup; */
-  /* box->celldata = celldata_backup; */
   athread_spawn(import_box_cpe, &pm);
   athread_join();
-  /* box->cells = cellptr; */
-  /* box->celldata = dataptr; */
-  /* esmd_import_box(md, buffer_head, fields, flags, xlo, ylo, zlo, xlen, ylen, zlen, off); */
-  /* printf("%d %d %d %d %d %d\n", xlo, ylo, zlo, xlen, ylen, zlen); */
-  /* printf("flags %d %d\n", flags, fields); */
-  /* if (CELL_F & fields) */
-  /* for (int i = 0; i < ncellall; i ++){ */
-  /*   if (cell_backup[i].natoms != cellptr[i].natoms){ */
-  /*     puts("natoms mismatch"); */
-  /*   } */
-  /*   for (int j = 0; j < cellptr[i].natoms; j ++){ */
-  /*     if (dataptr[i].x[j][0] != celldata_backup[i].x[j][0]) {debug("x %d %d %d\n", i, j, cellptr[i].natoms); assert(0);}; */
-  /*     //if (dataptr[i].v[j][0] != celldata_backup[i].v[j][0]) {debug("v %d %d %f %f\n", i, j, dataptr[i].v[j][0], celldata_backup[i].v[j][0]); assert(0);}; */
-  /*     if (*(long*)&dataptr[i].f[j][0] != *(long*)&celldata_backup[i].f[j][0]) {debug("f %d %d %f %f\n", i, j, dataptr[i].f[j][0], celldata_backup[i].f[j][0]); assert(0);}; */
-  /*     if (dataptr[i].type[j] != celldata_backup[i].type[j]) {debug("t %d %d\n", i, j); assert(0);}; */
-  /*     if (dataptr[i].export[j] != celldata_backup[i].export[j]) {debug("e %d %d\n", i, j); assert(0);}; */
-  /*   } */
-  /* } */
-  /* free(cell_backup); */
-  /* free(celldata_backup); */
+
   timer_stop("import_box_sw");
-  //printf("%ld %ld %ld %ld\n", ret, pm.offset_atoms[NPES_IO], pm.offset_cells[NPES_IO], estimate_atoms_size(fields));
   return 0;
 }
 #endif
