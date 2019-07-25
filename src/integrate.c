@@ -220,7 +220,7 @@ void integrate(esmd_t *md) {
   md->accu_local.epot = 0;
   md->accu_local.kinetic = 0;
   
-  initial_integrate_nve(md);
+  initial_integrate_nve_sw(md);
   
   esmd_export_atoms(md);
   
@@ -233,7 +233,7 @@ void integrate(esmd_t *md) {
   if ((md->step + 1) % md->nthermo == 0) evflag = 3;
   pair_lj_force_sw(md, evflag);
 
-  esmd_exchange_cell(md, HALO_TO_LOCAL, CELL_META | CELL_F, TRANS_INC_F | TRANS_ATOMS);
+  esmd_exchange_cell(md, HALO_TO_LOCAL, CELL_F, TRANS_INC_F | TRANS_ATOMS);
   
   //esmd_exchange_cell(md, LOCAL_TO_HALO, CELL_F);
   final_integrate_nve(md);

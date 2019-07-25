@@ -154,5 +154,4 @@ size_t esmd_import_box(esmd_t *md, void *buffer, int fields, int flags,  int xlo
   }
   timer_stop("esmd_import_box");
   return bufoff;
-  //return entry_size * xlen * ylen * zlen;
 }

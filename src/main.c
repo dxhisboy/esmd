@@ -46,9 +46,10 @@ int main(int argc, char **argv){
   debug("sizeof pot_conf: %ld\n", sizeof(md.pot_conf));
   esmd_set_box_size_by_lattice(&md);
   master_info("box size is %f %f %f\n", md.box->lglobal[0], md.box->lglobal[1], md.box->lglobal[2]);
-  master_info("cell size is %f %f %f\n", md.box->lcell[0], md.box->lcell[1], md.box->lcell[2]);
+
   master_info("lattice scale is %f\n", lat_conf->scale);
   esmd_box_setup_global(&md);
+  master_info("cell size is %f %f %f\n", md.box->lcell[0], md.box->lcell[1], md.box->lcell[2]);
   esmd_auto_part(&md);
   esmd_multiproc_part(&md);
   master_info("divided tasks to %d*%d*%d grid\n", md.mpp->npx, md.mpp->npy, md.mpp->npz);
