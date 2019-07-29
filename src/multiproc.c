@@ -217,7 +217,7 @@ void esmd_multiproc_part(esmd_t *md){
   box->offset[1] = sty;
   box->offset[2] = stz;
 
-  init_comm_unordered(md);
+  init_comm_ordered(md);
 }
 
 inline int proc_3d_to_flat(multiproc_t *mpp, int pidx, int pidy, int pidz){
@@ -249,7 +249,7 @@ void esmd_comm_finish(esmd_t *md, halo_t *halo, int dir, int fields, int flags){
   MPI_Wait(&halo->send_req, &halo->send_stat);
 }
 
-void esmd_exchange_cell(esmd_t *md, int direction, int fields, int flags) {
+void esmd_exchange_cell_unordered(esmd_t *md, int direction, int fields, int flags) {
   timer_start("comm");
   for (int i = 0; i < 26; i ++){
     //printf("%d\n", md->mpp->halo[i].neighbor);
@@ -261,7 +261,8 @@ void esmd_exchange_cell(esmd_t *md, int direction, int fields, int flags) {
   //exit(1);
   timer_stop("comm");
 }
-void esmd_exchange_cell_ordered(esmd_t *md, int direction, int fields, int flags) {
+void esmd_exchange_cell(esmd_t *md, int direction, int fields, int flags) {
+  timer_start("comm");
   multiproc_t *mpp = md->mpp;
   if (direction == LOCAL_TO_HALO) {
     for (int i = 4; i >= 0; i -= 2){
@@ -281,7 +282,8 @@ void esmd_exchange_cell_ordered(esmd_t *md, int direction, int fields, int flags
       esmd_comm_finish(md, mpp->halo + i + 1, direction, fields, flags);
       //printf("%d %d\n", mpp->halo[i + 0].neighbor, mpp->halo[i + 1].neighbor);
     }
-  }  
+  }
+  timer_stop("comm");
 }
 
 void esmd_global_sum_vec(esmd_t *md, areal *result, areal *localvec){

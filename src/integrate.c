@@ -224,10 +224,10 @@ void integrate(esmd_t *md) {
   initial_integrate_nve_sw(md);
   
   esmd_export_atoms_sw(md);
-  
+
   esmd_exchange_cell(md, LOCAL_TO_HALO, CELL_META | CELL_X | CELL_T | CELL_V | CELL_E, TRANS_ADJ_X | TRANS_EXPORTS);
   
-  esmd_import_atoms(md);
+  esmd_import_atoms_sw(md);
   
   esmd_exchange_cell(md, LOCAL_TO_HALO, CELL_META | CELL_X | CELL_T | CELL_V, TRANS_ADJ_X | TRANS_ATOMS);
   int evflag = 0;

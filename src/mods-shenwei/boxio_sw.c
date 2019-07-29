@@ -1,5 +1,6 @@
 #include <data.h>
 #include <util.h>
+#include <swdiv.h>
 #include <assert.h>
 #define DEBUG_THIS_FILE
 #include <log.h>
@@ -64,11 +65,20 @@ void export_box_cpe(boxio_param_t *gl_pm){
   if (fields & CELL_META) g_offset += offset_cells[_MYID] * sizeof(cell_t);
   size_t atomdata_size = estimate_atoms_size(pm.fields);
   g_offset += atomdata_size * pm.offset_atoms[_MYID];
-
+  div_idx_t idxx, idxy;
+  build_div_idx(&idxx, xlen);
+  build_div_idx(&idxy, ylen);
   for (int icell = offset_cells[_MYID]; icell < offset_cells[_MYID + 1]; icell ++){
-    int ii = icell % xlen + xlo;
-    int jj = icell / xlen % ylen + ylo;
-    int kk = icell / xlen / ylen + zlo;
+    int divxlen = div_idx(icell, &idxx);
+    int modxlen = icell - divxlen * xlen;
+    int divylen = div_idx(divxlen, &idxy);
+    int modylen = divxlen - divylen * ylen;
+    int ii = modxlen + xlo;
+    int jj = modylen + ylo;
+    int kk = divylen + zlo;
+    /* int ii = icell % xlen + xlo; */
+    /* int jj = icell / xlen % ylen + ylo; */
+    /* int kk = icell / xlen / ylen + zlo; */
     int celloff = get_cell_off((&box), ii, jj, kk);
     cell_t cell;
 
@@ -325,11 +335,23 @@ estimate_io_size(esmd_t *md, int *offset_atoms, int *offset_cells, int flags,
       offset_cells[pe + 1] ++;
     offset_cells[pe + 1] += offset_cells[pe];
   }
+  div_idx_t idxx, idxy;
+  build_div_idx(&idxx, xlen);
+  build_div_idx(&idxy, ylen);
   for (int pe = 0; pe < NPES_IO; pe ++){
     for (int icell = offset_cells[pe]; icell < offset_cells[pe + 1]; icell ++){
-      int ii = icell % xlen + xlo;
-      int jj = icell / xlen % ylen + ylo;
-      int kk = icell / (xlen * ylen) + zlo;
+      int divxlen = div_idx(icell, &idxx);
+      int modxlen = icell - divxlen * xlen;
+      int divylen = div_idx(divxlen, &idxy);
+      int modylen = divxlen - divylen * ylen;
+      int ii = modxlen + xlo;
+      int jj = modylen + ylo;
+      int kk = divylen + zlo;
+
+      /* for (int icell = offset_cells[pe]; icell < offset_cells[pe + 1]; icell ++){ */
+      /*   int ii = icell % xlen + xlo; */
+      /*   int jj = icell / xlen % ylen + ylo; */
+      /*   int kk = icell / (xlen * ylen) + zlo; */
       int celloff = get_cell_off(box, ii, jj, kk);
       if (flags & (TRANS_ATOMS | TRANS_EXPORTS)){
         if (flags & TRANS_ATOMS)

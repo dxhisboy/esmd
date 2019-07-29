@@ -36,15 +36,17 @@ typedef struct celldata {
 #define CELL_DATA_XT_SIZE (struct_off(celldata_t, q) - struct_off(celldata_t, x))
 #define CELL_DATA_XTQ_SIZE (sizeof(celldata_t) - struct_off(celldata_t, x))
 
-typedef struct cellforce {
-  areal f[CELL_SIZE][3];
-} cellforce_t;
+/* typedef struct cellforce { */
+/*   areal f[CELL_SIZE][3]; */
+/* } cellforce_t; */
 
 typedef struct cell {
   areal bbox_ideal[2][3];
   int natoms, nexport, export_ptr;
   int nreplicas, emask, padding;
-  cellforce_t **replicas;
+  unsigned long long pemask;
+  //cellforce_t **replicas;
+  areal (*frep)[CELL_SIZE][3];
   celldata_t *data;
 } cell_t;
 
@@ -148,6 +150,7 @@ typedef struct esmd {
   accumulate_t accu_local, accu_global;
   thermo_t thermo;
   int natoms, step, nthermo;
+  void *platformdata;
 } esmd_t;
 
 

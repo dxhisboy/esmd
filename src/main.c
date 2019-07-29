@@ -11,6 +11,7 @@
 #include <lattice.h>
 #define DEBUG_THIS_FILE
 #include <log.h>
+#include <swlu.h>
 int main(int argc, char **argv){
   esmd_t md;
   memory_init();
@@ -20,7 +21,6 @@ int main(int argc, char **argv){
 
   timer_init();
   esmd_mpi_init(&md);
-  athread_init();
   //esmd_pair_setup(&md, 2.5);
   areal cutoff = 2.5;
   ireal epsilon = 1.0;
@@ -61,20 +61,28 @@ int main(int argc, char **argv){
   md.accu_local.virial = 0;
   md.accu_local.epot = 0;
   md.accu_local.kinetic = 0;
-  md.nthermo = 10;
+  md.nthermo = 100;
+  shenwei_init(&md);
   esmd_exchange_cell(&md, LOCAL_TO_HALO, CELL_META | CELL_X | CELL_T, TRANS_ADJ_X | TRANS_ATOMS);
   pair_lj_force(&md, 3);
   esmd_exchange_cell(&md, HALO_TO_LOCAL, CELL_F, TRANS_INC_F | TRANS_ATOMS);
   //return 0;
   md.step = 1;
-  for (int i = 0; i < 10; i ++){
+  swlu_prof_init();
+  swlu_prof_start();
+  //enable_memcpy_log();
+  for (int i = 0; i < 1000; i ++){
     timer_start("integrate");
     integrate(&md);
     timer_stop("integrate");
   }
+  //disable_memcpy_log();
+  swlu_prof_stop();
+  swlu_prof_print();
   report_cell_info(&md);
 
   timer_print(md.mpp->comm);
+  shenwei_destroy();
   MPI_Finalize();
   return 0;
 }

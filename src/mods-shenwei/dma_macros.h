@@ -171,9 +171,11 @@
   }
 
 #define pe_get(mem, ldm, size) {                                        \
-    athread_get(PE_MODE, (mem), (ldm), (size), (void*)&reply_shadow     \
-        , 0, pe_get_stride_shadow, pe_get_bsize_shadow);                \
-    count_shadow ++;                                                    \
+    if (size > 0) {                                                     \
+      athread_get(PE_MODE, (mem), (ldm), (size), (void*)&reply_shadow   \
+                  , 0, pe_get_stride_shadow, pe_get_bsize_shadow);      \
+      count_shadow ++;                                                  \
+    }                                                                   \
   }
 
 #define row_get(mem, ldm, size) {                                       \
@@ -203,14 +205,16 @@
   }
 
 #define pe_put(mem, ldm, size) {                                        \
-    athread_put(PE_MODE, (ldm), (mem), (size), (void*)&reply_shadow     \
-        , pe_put_stride_shadow, pe_put_bsize_shadow);                   \
-    count_shadow ++;                                                    \
+    if (size > 0) {                                                     \
+      athread_put(PE_MODE, (ldm), (mem), (size), (void*)&reply_shadow   \
+                  , pe_put_stride_shadow, pe_put_bsize_shadow);         \
+      count_shadow ++;                                                  \
+    }                                                                   \
   }
 
 #define row_put(mem, ldm, size) {                                       \
     athread_put(ROW_MODE, (ldm), (mem), (size), (void *)&reply_shadow   \
-        , row_put_stride_shadow, row_put_bsize_shadow);          \
+                , row_put_stride_shadow, row_put_bsize_shadow);         \
     count_shadow ++;                                                    \
   }
 

@@ -84,6 +84,10 @@ static void mr_print_trav(memrec_t *node, void *help){
 static void *esmd_aligned_malloc(size_t size){
   long raw = (long)malloc(size + sizeof(meminfo_t) + MEMORY_ALIGN_MASK);
   void *ret = (void*)((raw + sizeof(meminfo_t) + MEMORY_ALIGN_MASK) & ~MEMORY_ALIGN_MASK);
+  if (ret == NULL){
+    perror("Malloc failed");
+    exit(1);
+  }
   meminfo_t *info = ret - sizeof(meminfo_t);
   info->raw = (void*)raw;
   info->size = size;

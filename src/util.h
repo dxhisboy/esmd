@@ -2,6 +2,7 @@
 #define UTIL_H_
 #include <string.h>
 #include <data.h>
+#include <stdint.h>
 enum transfer_flags {
   TRANS_ADJ_X   = 1,
   TRANS_INC_F   = 2,

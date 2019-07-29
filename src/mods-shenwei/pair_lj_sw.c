@@ -3,6 +3,17 @@
 #include <geometry.h>
 /* #include <timer.h> */
 
+#ifdef CPE
+#include <simd.h>
+#include <slave.h>
+#include <dma_macros.h>
+#include <reg_reduce.h>
+#define LWPF_UNIT U(PAIR_LJ)
+#define LWPF_KERNELS K(ALL) K(FILL) K(COMP) K(SYN) K(FINI) K(RI) K(WI) K(RJ) K(WJ)
+#undef inline
+#include <lwpf2/lwpf2.h>
+#endif
+
 #define TEMPLATE <pair_lj_template_sw.h>
 #ifdef MPE
 #define FUNCTION slave_pair_lj_force_cpe
