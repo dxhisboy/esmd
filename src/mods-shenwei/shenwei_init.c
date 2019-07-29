@@ -34,14 +34,15 @@ void shenwei_init(esmd_t *md){
   int *nall = box->nall;
   int ncellsall = nall[0] * nall[1] * nall[2];
   swdata_t *swdata = esmd_malloc(sizeof(swdata_t), "shenwei data");
+  md->platformdata = swdata;
   //partition the box
-  for (int k = 0; k < 4; k ++){
+  for (int k = 0; k < 8; k ++){
     for (int j = 0; j < 4; j ++){
-      for (int i = 0; i < 4; i ++){
-        int ipe = k * 16 + j * 4 + i;
-        part1d(nlocal[2], 4, k, swdata->start[ipe] + 2, swdata->count[ipe] + 2);
+      for (int i = 0; i < 2; i ++){
+        int ipe = k * 8 + j * 2 + i;
+        part1d(nlocal[2], 8, k, swdata->start[ipe] + 2, swdata->count[ipe] + 2);
         part1d(nlocal[1], 4, j, swdata->start[ipe] + 1, swdata->count[ipe] + 1);
-        part1d(nlocal[0], 4, i, swdata->start[ipe] + 0, swdata->count[ipe] + 0);
+        part1d(nlocal[0], 2, i, swdata->start[ipe] + 0, swdata->count[ipe] + 0);
       }
     }
   }
@@ -72,7 +73,7 @@ void shenwei_init(esmd_t *md){
       }
     }
   }
-  //debug("%d %d %d %d %d\n", ncellsall, nupdate, swdata->count[0][0], swdata->count[0][1], swdata->count[0][2]);
+  debug("%d %d %d %d %d\n", ncellsall, nupdate, swdata->count[0][0], swdata->count[0][1], swdata->count[0][2]);
   //mempool_init(&(swdata->fpool), sizeof(areal) * CELL_SIZE * 3, nupdate, "force pool");
   swdata->frep = esmd_malloc(sizeof(areal) * CELL_SIZE * 3 * nupdate, "force replicas");
   int rep_head = 0;
@@ -82,16 +83,17 @@ void shenwei_init(esmd_t *md){
     asm("ctpop %1, %0\n\t" : "=r"(nrep) : "r"(cell->pemask));
     cell->nreplicas = nrep;
     cell->frep = swdata->frep + rep_head;
-    rep_head ++;
+    rep_head += nrep;
   }
-  swdata->nupdates = nupdates;
+  //debug("%p %d\n", box->cells[5121].frep, box->cells[5121].nreplicas);
+  swdata->nupdate = nupdate;
 }
 
-void shenwei_destroy(){
-  int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  if (rank == 0){
-    lwpf_report_summary(stdout, &conf);
+  void shenwei_destroy(){
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    if (rank == 0){
+      lwpf_report_summary(stdout, &conf);
+    }
   }
-}
 #endif

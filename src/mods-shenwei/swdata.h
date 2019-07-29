@@ -5,6 +5,6 @@
 typedef struct {
   int start[64][3], count[64][3];
   areal (*frep)[CELL_SIZE][3];
-  int nupdates;
+  int nupdate;
 } swdata_t;
 #endif

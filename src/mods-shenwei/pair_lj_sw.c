@@ -8,6 +8,7 @@
 #include <slave.h>
 #include <dma_macros.h>
 #include <reg_reduce.h>
+#include <swdata.h>
 #define LWPF_UNIT U(PAIR_LJ)
 #define LWPF_KERNELS K(ALL) K(FILL) K(COMP) K(SYN) K(FINI) K(RI) K(WI) K(RJ) K(WJ)
 #undef inline

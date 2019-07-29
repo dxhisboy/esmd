@@ -185,8 +185,12 @@ void import_box_cpe(boxio_param_t *gl_pm){
     int kk = icell / xlen / ylen + zlo;
     int celloff = get_cell_off((&box), ii, jj, kk);
     cell_t cell;
-
+    pe_get(box.cells + celloff, &cell, sizeof(cell_t));
+    dma_syn();
     if (fields & CELL_META){
+      void *frep = cell.frep;
+      int nreplicas = cell.nreplicas;
+      unsigned long long pemask = cell.pemask;
       check_import_size(sizeof(cell_t));
       memcpy(&cell, l_buf + l_offset, sizeof(cell_t));
       cell.bbox_ideal[0][0] += xoff[0];
@@ -195,11 +199,11 @@ void import_box_cpe(boxio_param_t *gl_pm){
       cell.bbox_ideal[1][0] += xoff[0];
       cell.bbox_ideal[1][1] += xoff[1];
       cell.bbox_ideal[1][2] += xoff[2];
+      cell.nreplicas = nreplicas;
+      cell.frep = frep;
+      cell.pemask = pemask;
       l_offset += sizeof(cell_t);
       pe_put(box.cells + celloff, &cell, sizeof(cell_t));
-      dma_syn();
-    } else {
-      pe_get(box.cells + celloff, &cell, sizeof(cell_t));
       dma_syn();
     }
 
