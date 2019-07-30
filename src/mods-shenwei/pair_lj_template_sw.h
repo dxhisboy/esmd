@@ -1,5 +1,5 @@
 #ifdef CPE
-static inline void CAT(pair_lj_ofrce_b2b_self, VER_CODE)(cell_t *self, potential_conf_t *pot_conf, areal (*xi)[3], areal (*fi)[3], int *ti, areal (*fj)[3], areal *evdwl, areal *virial){
+static inline void CAT(pair_lj_force_b2b_self, VER_CODE)(cell_t *self, potential_conf_t *pot_conf, areal (*xi)[3], areal (*fi)[3], int *ti, areal (*fj)[3], areal *evdwl, areal *virial){
   int max_cut2 = pot_conf->cutoff * pot_conf->cutoff;
   lj_param_t *lj_param = &(pot_conf->param.lj);
 
@@ -10,7 +10,7 @@ static inline void CAT(pair_lj_ofrce_b2b_self, VER_CODE)(cell_t *self, potential
     ireal *ec6_i = lj_param->ec6[ti[i]];
     ireal *ec12_i = lj_param->ec12[ti[i]];
 
-    for (int j = 0; j < self->natoms; j ++) {
+    for (int j = 0; j < i; j ++) {
       int jtype = ti[j];
       ireal delx = xi[j][0] - xi[i][0];
       ireal dely = xi[j][1] - xi[i][1];
@@ -120,15 +120,6 @@ void CAT(pair_lj_force_cpe, VER_CODE)(esmd_t *gl_md) {
   int ncells = nlocal[0] * nlocal[1] * nlocal[2];
   int ncellsall = nall[0] * nall[1] * nall[2];
   lwpf_start(FILL);
-  //for (int icell = _MYID; icell < ncellsall; icell += 64){
-  /* cell_t cell_self; */
-  /* pe_get(box.cells + self_off, &cell_self, sizeof(cell_t)); */
-  /* dma_syn(); */
-  /* for (int irep = _MYID; irep < swdata.nupdate; irep += 64){ */
-  /*   //celldata_t *data_self = box.celldata + icell; */
-  /*   pe_put(swdata.frep + irep, fi, sizeof(areal) * 3 * CELL_SIZE); */
-  /*   dma_syn(); */
-  /* } */
 
   for (int icell = _MYID; icell < ncellsall; icell += 64){
     cell_t cell;
@@ -140,20 +131,8 @@ void CAT(pair_lj_force_cpe, VER_CODE)(esmd_t *gl_md) {
       pe_put(gl_frep + offset, fi, CELL_SIZE * sizeof(areal) * 3);
       dma_syn();
     }
-    /* for (int irep = 0; irep < cell.nreplicas; irep ++){ */
-    /*   pe_get(cell.frep + irep, fj, cell.natoms * sizeof(areal) * 3); */
-    /*   dma_syn(); */
-    /*   for (int i = 0; i < cell.natoms; i ++){ */
-    /*     fi[i][0] += fj[i][0]; */
-    /*     fi[i][1] += fj[i][1]; */
-    /*     fi[i][2] += fj[i][2]; */
-    /*   } */
-    /* } */
-    //pe_put(box.celldata[icell].f, fi, cell.natoms * sizeof(areal) * 3);
-    //dma_syn();
   }
 
-  //}
   lwpf_stop(FILL);
   athread_syn(ARRAY_SCOPE, 0xffff);
   //if (_MYID > 0) return;
@@ -166,14 +145,9 @@ void CAT(pair_lj_force_cpe, VER_CODE)(esmd_t *gl_md) {
     int icelled = icellst + BLK;
     if (icelled > ncells) icelled = ncells;
     for (int icell = icellst; icell < icelled; icell ++){
-
-      //for (int icell = _MYID; icell < ncells; icell += 64){
       int kk = icell / (nlocal[0] * nlocal[1]);
       int jj = icell / nlocal[0] % nlocal[1];
       int ii = icell % nlocal[0];
-      /* for (int kk = start[2]; kk < start[2] + count[2]; kk ++){ */
-      /*   for (int jj = start[1]; jj < start[1] + count[1]; jj ++){ */
-      /*     for (int ii = start[0]; ii < start[0] + count[0]; ii ++){ */
       int self_off = get_cell_off((&box), ii, jj, kk);
       cell_t cell_self;
       lwpf_start(RI);
@@ -195,7 +169,7 @@ void CAT(pair_lj_force_cpe, VER_CODE)(esmd_t *gl_md) {
             int neigh_z = dz + kk;
             int neigh_off = get_cell_off((&box), ii + dx, jj + dy, kk + dz);
             int irep;
-
+	    int self_interaction = (dx == 0 && dy == 0 && dz == 0);
             cell_t cell_neigh;
             lwpf_start(RJ);
             pe_get(box.cells + neigh_off, &cell_neigh, sizeof(cell_t));
@@ -203,70 +177,20 @@ void CAT(pair_lj_force_cpe, VER_CODE)(esmd_t *gl_md) {
             asm ("ctpop %1, %0\n\t" : "=r"(irep): "r"(lowerpe_mask & cell_neigh.pemask));
             pe_get(box.celldata[neigh_off].x, xj, cell_neigh.natoms * sizeof(areal) * 3);
             pe_get(box.celldata[neigh_off].type, tj, cell_neigh.natoms * sizeof(int));
-            if (md.mpp->pid == 0 && _MYID == 20){
-              //printf("%d %d %d %p %d %d %p\n", ii + dx, jj + dy, kk + dz, cell_neigh.frep, irep, neigh_off, box.cells[5121].frep);
-            }
 	    areal (*gl_frep)[3] = cell_neigh.frep[0];
 	    int roff = irep * cell_neigh.natoms;
             pe_get(gl_frep + roff, fj, cell_neigh.natoms * sizeof(areal) * 3);
             dma_syn();
             lwpf_stop(RJ);
-            int self_interaction = 0;
-            if (dx == 0 && dy == 0 && dz == 0) {
-              self_interaction = 1;
-            }
-            areal (*bbox)[3] = cell_neigh.bbox_ideal;
-            areal box_o[3], box_h[3];
-            box_o[0] = 0.5 * (bbox[0][0] + bbox[1][0]);
-            box_o[1] = 0.5 * (bbox[0][1] + bbox[1][1]);
-            box_o[2] = 0.5 * (bbox[0][2] + bbox[1][2]);
-            box_h[0] = 0.5 * (bbox[1][0] - bbox[0][0]);
-            box_h[1] = 0.5 * (bbox[1][1] - bbox[0][1]);
-            box_h[2] = 0.5 * (bbox[1][2] - bbox[0][2]);
-
-            for (int i = 0; i < cell_self.natoms; i ++) {
-              int jtop = self_interaction ? i : cell_neigh.natoms;
-              if (!self_interaction && dsq_atom_box(xi[i], box_o, box_h) >= max_cut2) continue;
-              ireal *cutoff2_i = lj_param->cutoff2[ti[i]];
-              ireal *c6_i = lj_param->c6[ti[i]];
-              ireal *c12_i = lj_param->c12[ti[i]];
-	      ireal *ec6_i = lj_param->ec6[ti[i]];
-	      ireal *ec12_i = lj_param->ec12[ti[i]];
-
-              for (int j = 0; j < jtop; j ++) {
-                int jtype = tj[j];
-                ireal delx = xj[j][0] - xi[i][0];
-                ireal dely = xj[j][1] - xi[i][1];
-                ireal delz = xj[j][2] - xi[i][2];
-                ireal r2 = delx * delx + dely * dely + delz * delz;
-                if (r2 < cutoff2_i[jtype]) {
-                  ireal r2inv = 1.0 / r2;
-                  ireal r6inv = r2inv * r2inv * r2inv;
-                  ireal force = r6inv * (r6inv * c12_i[jtype] - c6_i[jtype]) * r2inv;
-
-                  fi[i][0] -= delx * force;
-                  fi[i][1] -= dely * force;
-                  fi[i][2] -= delz * force;
-                    
-                  fj[j][0] += delx * force;
-                  fj[j][1] += dely * force;
-                  fj[j][2] += delz * force;
-                  if (ENERGY){
-                    evdwl += r6inv * (r6inv * ec12_i[jtype] - ec6_i[jtype]) * 2;
-                  }
-                  if (VIRIAL){
-                    virial += r2 * force;
-                  }
-                }
-              }
-            }
-            if (self_interaction){
-              for (int i = 0; i < cell_self.natoms; i ++){
-                fj[i][0] += fi[i][0];
-                fj[i][1] += fi[i][1];
-                fj[i][2] += fi[i][2];
-              }
-            }
+	    if (self_interaction){
+	      CAT(pair_lj_force_b2b_self, VER_CODE)(&cell_self, &pot_conf,
+						    xi, fi, ti, fj,
+						    &evdwl, &virial);
+	    } else {
+	      CAT(pair_lj_force_b2b_neighbor, VER_CODE)(&cell_self, &cell_neigh, &pot_conf,
+							xi, fi, ti, xj, fj, tj,
+							&evdwl, &virial);
+	    }
             lwpf_start(WJ);
             pe_put(gl_frep + roff, fj, sizeof(areal) * 3 * cell_neigh.natoms);
             dma_syn();
