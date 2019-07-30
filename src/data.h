@@ -1,3 +1,4 @@
+
 #ifndef DATA_H_
 #define DATA_H_
 
@@ -76,6 +77,7 @@ typedef struct lj_param {
 
 typedef struct potential_conf {
   ireal cutoff;
+  int ntypes;
   union {
     lj_param_t lj;
   } param;

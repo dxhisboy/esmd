@@ -10,6 +10,7 @@
 void pair_lj_setup(esmd_t *md, areal *cutoff, ireal *epsilon, ireal *sigma, ireal *mass, int ntypes){
   assert(ntypes < MAX_TYPES);
   md->pot_conf->cutoff = 0;
+  md->pot_conf->ntypes = ntypes;
   for (int i = 0; i < ntypes; i ++){
     md->pot_conf->rmass[i] = 1.0 / mass[i];
     md->pot_conf->mass[i] = mass[i];

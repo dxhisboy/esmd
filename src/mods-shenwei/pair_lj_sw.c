@@ -9,8 +9,9 @@
 #include <dma_macros.h>
 #include <reg_reduce.h>
 #include <swdata.h>
+#include <simd_ext.h>
 #define LWPF_UNIT U(PAIR_LJ)
-#define LWPF_KERNELS K(ALL) K(FILL) K(COMP) K(SYN) K(FINI) K(RI) K(WI) K(RJ) K(WJ)
+#define LWPF_KERNELS K(ALL) K(FILL) K(COMP) K(SYN) K(FINI) K(RI) K(RJ) K(WJ) K(B2B) K(CONV) K(PROF)
 #undef inline
 #include <lwpf2/lwpf2.h>
 #endif

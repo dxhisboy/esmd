@@ -10,3 +10,9 @@ inline doublev4 simd_vsumd(doublev4 in){
       : "=r"(ret), "=r"(tmp) : "r"(in));
   return ret;
 }
+inline int simd_vmatchd(doublev4 in, int val){
+  int ret;
+  asm("vmatch %2, %1, %0\n\t"
+      : "=r"(ret) : "r"(in), "r"(val));
+  return ret;
+}
