@@ -33,42 +33,47 @@ void shenwei_init(esmd_t *md){
   int *nlocal = box->nlocal;
   int *nall = box->nall;
   int ncellsall = nall[0] * nall[1] * nall[2];
+  int ncells = nlocal[0] * nlocal[1] * nlocal[2];
   swdata_t *swdata = esmd_malloc(sizeof(swdata_t), "shenwei data");
   md->platformdata = swdata;
   //partition the box
-  for (int k = 0; k < 8; k ++){
-    for (int j = 0; j < 4; j ++){
-      for (int i = 0; i < 2; i ++){
-        int ipe = k * 8 + j * 2 + i;
-        part1d(nlocal[2], 8, k, swdata->start[ipe] + 2, swdata->count[ipe] + 2);
-        part1d(nlocal[1], 4, j, swdata->start[ipe] + 1, swdata->count[ipe] + 1);
-        part1d(nlocal[0], 2, i, swdata->start[ipe] + 0, swdata->count[ipe] + 0);
-      }
-    }
-  }
+  /* for (int k = 0; k < 8; k ++){ */
+  /*   for (int j = 0; j < 4; j ++){ */
+  /*     for (int i = 0; i < 2; i ++){ */
+  /*       int ipe = k * 8 + j * 2 + i; */
+  /*       part1d(nlocal[2], 8, k, swdata->start[ipe] + 2, swdata->count[ipe] + 2); */
+  /*       part1d(nlocal[1], 4, j, swdata->start[ipe] + 1, swdata->count[ipe] + 1); */
+  /*       part1d(nlocal[0], 2, i, swdata->start[ipe] + 0, swdata->count[ipe] + 0); */
+  /*     } */
+  /*   } */
+  /* } */
   
   for (int i = 0; i < ncellsall; i ++){
     box->cells[i].pemask = 0;
   }
   int nupdate = 0;
+
   for (int ipe = 0; ipe < NCPE; ipe ++){
-    int *start = swdata->start[ipe];
-    int *count = swdata->count[ipe];
-    int ks = start[2] - NCELL_CUT;
-    int js = start[1] - NCELL_CUT;
-    int is = start[0] - NCELL_CUT;
-    int ke = start[2] + count[2] +  NCELL_CUT;
-    int je = start[1] + count[1] +  NCELL_CUT;
-    int ie = start[0] + count[0] +  NCELL_CUT;
     unsigned long long ipemask = 1ULL << ipe;
-    for (int kk = ks; kk < ke; kk ++){
-      for (int jj = js; jj < je; jj ++){
-        for (int ii = is; ii < ie; ii ++){
-          int celloff = get_cell_off(box, ii, jj, kk);
-          cell_t *cell = box->cells + celloff;
-          if ((cell->pemask & ipemask) == 0) nupdate ++;
-          //swdata->pemask[celloff] |= 1ULL << ipe;
-          cell->pemask |= ipemask;
+    for (int icellst = ipe * BLK; icellst < ncells; icellst += NCPE * BLK){
+      int icelled = icellst + BLK;
+      if (icelled > ncells) icelled = ncells;
+      for (int icell = icellst; icell < icelled; icell ++){
+        int kk = icell / (nlocal[0] * nlocal[1]);
+        int jj = icell / nlocal[0] % nlocal[1];
+        int ii = icell % nlocal[0];
+        for (int dx = -NCELL_CUT; dx <= 0; dx ++) {
+          int dytop = (dx == 0) ? 0 : NCELL_CUT;
+          for (int dy = -NCELL_CUT; dy <= dytop; dy ++) {
+            int dztop = (dx == 0 && dy == 0) ? 0 : NCELL_CUT;
+            for (int dz = -NCELL_CUT; dz <= dztop; dz ++) {
+              int celloff = get_cell_off(box, ii + dx, jj + dy, kk + dz);
+              cell_t *cell = box->cells + celloff;
+              if ((cell->pemask & ipemask) == 0) nupdate ++;
+              //swdata->pemask[celloff] |= 1ULL << ipe;
+              cell->pemask |= ipemask;
+            }
+          }
         }
       }
     }
