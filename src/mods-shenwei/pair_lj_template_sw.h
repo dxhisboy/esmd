@@ -1,4 +1,96 @@
 #ifdef CPE
+static inline void CAT(pair_lj_ofrce_b2b_self, VER_CODE)(cell_t *self, potential_conf_t *pot_conf, areal (*xi)[3], areal (*fi)[3], int *ti, areal (*fj)[3], areal *evdwl, areal *virial){
+  int max_cut2 = pot_conf->cutoff * pot_conf->cutoff;
+  lj_param_t *lj_param = &(pot_conf->param.lj);
+
+  for (int i = 0; i < self->natoms; i ++) {
+    ireal *cutoff2_i = lj_param->cutoff2[ti[i]];
+    ireal *c6_i = lj_param->c6[ti[i]];
+    ireal *c12_i = lj_param->c12[ti[i]];
+    ireal *ec6_i = lj_param->ec6[ti[i]];
+    ireal *ec12_i = lj_param->ec12[ti[i]];
+
+    for (int j = 0; j < self->natoms; j ++) {
+      int jtype = ti[j];
+      ireal delx = xi[j][0] - xi[i][0];
+      ireal dely = xi[j][1] - xi[i][1];
+      ireal delz = xi[j][2] - xi[i][2];
+      ireal r2 = delx * delx + dely * dely + delz * delz;
+      if (r2 < cutoff2_i[jtype]) {
+	ireal r2inv = 1.0 / r2;
+	ireal r6inv = r2inv * r2inv * r2inv;
+	ireal force = r6inv * (r6inv * c12_i[jtype] - c6_i[jtype]) * r2inv;
+
+	fi[i][0] -= delx * force;
+	fi[i][1] -= dely * force;
+	fi[i][2] -= delz * force;
+                    
+	fj[j][0] += delx * force;
+	fj[j][1] += dely * force;
+	fj[j][2] += delz * force;
+	if (ENERGY){
+	  *evdwl += r6inv * (r6inv * ec12_i[jtype] - ec6_i[jtype]) * 2;
+	}
+	if (VIRIAL){
+	  *virial += r2 * force;
+	}
+      }
+    }
+  }
+  for (int i = 0; i < self->natoms; i ++){
+    fj[i][0] += fi[i][0];
+    fj[i][1] += fi[i][1];
+    fj[i][2] += fi[i][2];
+  }
+}
+static inline void CAT(pair_lj_force_b2b_neighbor, VER_CODE)(cell_t *self, cell_t *neigh, potential_conf_t *pot_conf, areal (*xi)[3], areal (*fi)[3], int *ti, areal (*xj)[3], areal (*fj)[3], int *tj, areal *evdwl, areal *virial){
+  int max_cut2 = pot_conf->cutoff * pot_conf->cutoff;
+  lj_param_t *lj_param = &(pot_conf->param.lj);
+  areal (*bbox)[3] = neigh->bbox_ideal;
+  areal box_o[3], box_h[3];
+  box_o[0] = 0.5 * (bbox[0][0] + bbox[1][0]);
+  box_o[1] = 0.5 * (bbox[0][1] + bbox[1][1]);
+  box_o[2] = 0.5 * (bbox[0][2] + bbox[1][2]);
+  box_h[0] = 0.5 * (bbox[1][0] - bbox[0][0]);
+  box_h[1] = 0.5 * (bbox[1][1] - bbox[0][1]);
+  box_h[2] = 0.5 * (bbox[1][2] - bbox[0][2]);
+  for (int i = 0; i < self->natoms; i ++) {
+    if (dsq_atom_box(xi[i], box_o, box_h) >= max_cut2) continue;
+    ireal *cutoff2_i = lj_param->cutoff2[ti[i]];
+    ireal *c6_i = lj_param->c6[ti[i]];
+    ireal *c12_i = lj_param->c12[ti[i]];
+    ireal *ec6_i = lj_param->ec6[ti[i]];
+    ireal *ec12_i = lj_param->ec12[ti[i]];
+
+    for (int j = 0; j < neigh->natoms; j ++) {
+      int jtype = tj[j];
+      ireal delx = xj[j][0] - xi[i][0];
+      ireal dely = xj[j][1] - xi[i][1];
+      ireal delz = xj[j][2] - xi[i][2];
+      ireal r2 = delx * delx + dely * dely + delz * delz;
+      if (r2 < cutoff2_i[jtype]) {
+	ireal r2inv = 1.0 / r2;
+	ireal r6inv = r2inv * r2inv * r2inv;
+	ireal force = r6inv * (r6inv * c12_i[jtype] - c6_i[jtype]) * r2inv;
+
+	fi[i][0] -= delx * force;
+	fi[i][1] -= dely * force;
+	fi[i][2] -= delz * force;
+                    
+	fj[j][0] += delx * force;
+	fj[j][1] += dely * force;
+	fj[j][2] += delz * force;
+	if (ENERGY){
+	  *evdwl += r6inv * (r6inv * ec12_i[jtype] - ec6_i[jtype]) * 2;
+	}
+	if (VIRIAL){
+	  *virial += r2 * force;
+	}
+      }
+    }
+  }
+
+}
 
 void CAT(pair_lj_force_cpe, VER_CODE)(esmd_t *gl_md) {
   lwpf_enter(PAIR_LJ);
@@ -131,14 +223,16 @@ void CAT(pair_lj_force_cpe, VER_CODE)(esmd_t *gl_md) {
             box_h[0] = 0.5 * (bbox[1][0] - bbox[0][0]);
             box_h[1] = 0.5 * (bbox[1][1] - bbox[0][1]);
             box_h[2] = 0.5 * (bbox[1][2] - bbox[0][2]);
+
             for (int i = 0; i < cell_self.natoms; i ++) {
               int jtop = self_interaction ? i : cell_neigh.natoms;
-              //if (dsq_atom_box(xi[i], box_o, box_h) >= max_cut2) continue;
+              if (!self_interaction && dsq_atom_box(xi[i], box_o, box_h) >= max_cut2) continue;
               ireal *cutoff2_i = lj_param->cutoff2[ti[i]];
               ireal *c6_i = lj_param->c6[ti[i]];
               ireal *c12_i = lj_param->c12[ti[i]];
-              ireal *ec6_i = lj_param->ec6[ti[i]];
-              ireal *ec12_i = lj_param->ec12[ti[i]];
+	      ireal *ec6_i = lj_param->ec6[ti[i]];
+	      ireal *ec12_i = lj_param->ec12[ti[i]];
+
               for (int j = 0; j < jtop; j ++) {
                 int jtype = tj[j];
                 ireal delx = xj[j][0] - xi[i][0];
