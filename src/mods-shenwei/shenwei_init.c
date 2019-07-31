@@ -81,6 +81,7 @@ void shenwei_init(esmd_t *md){
   //debug("%d %d %d %d %d\n", ncellsall, nupdate, swdata->count[0][0], swdata->count[0][1], swdata->count[0][2]);
   //mempool_init(&(swdata->fpool), sizeof(areal) * CELL_SIZE * 3, nupdate, "force pool");
   swdata->frep = esmd_malloc(sizeof(areal) * CELL_SIZE * 3 * nupdate, "force replicas");
+  memset(swdata->frep, -1, sizeof(areal) * CELL_SIZE * 3 * nupdate);
   int rep_head = 0;
   for (int i = 0; i < ncellsall; i ++){
     cell_t *cell = box->cells + i;

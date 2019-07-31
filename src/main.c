@@ -68,8 +68,8 @@ int main(int argc, char **argv){
   esmd_exchange_cell(&md, HALO_TO_LOCAL, CELL_F, TRANS_INC_F | TRANS_ATOMS);
   //return 0;
   md.step = 1;
-  swlu_prof_init();
-  swlu_prof_start();
+  /* swlu_prof_init(); */
+  /* swlu_prof_start(); */
   //enable_memcpy_log();
   for (int i = 0; i < 1000; i ++){
     timer_start("integrate");
@@ -77,8 +77,8 @@ int main(int argc, char **argv){
     timer_stop("integrate");
   }
   //disable_memcpy_log();
-  swlu_prof_stop();
-  swlu_prof_print();
+  /* swlu_prof_stop(); */
+  /* swlu_prof_print(); */
   report_cell_info(&md);
 
   timer_print(md.mpp->comm);
