@@ -15,6 +15,10 @@ inline doublev4 simd_vsumd(doublev4 in){
   /*     : "=r"(ret), "=r"(tmp) : "r"(in)); */
   return ret;
 }
+#define simd_vsumd_m(ret) {                                     \
+    ret += simd_vshff(ret, ret, vshuffd_rc(2, 3, 0, 1));        \
+    ret += simd_vshff(ret, ret, vshuffd_rc(1, 0, 3, 2));        \
+  }
 inline int simd_vmatchd(doublev4 in, int val){
   int ret;
   asm("vmatch %2, %1, %0\n\t"
@@ -22,6 +26,7 @@ inline int simd_vmatchd(doublev4 in, int val){
   return ret;
 }
 
+#define simd_vmatchd_m(ret, in, val)   asm("vmatch %2, %1, %0\n\t" : "=r"(ret) : "r"(val), "r"(in));
 #define simd_vselne(a, b, c) simd_vseleq(a, c, b)
 inline void simd_load_4x3d(doublev4 *v0, doublev4 *v1, doublev4 *v2, void *st){
   doublev4 l0, l1, l2;
@@ -34,11 +39,17 @@ inline void simd_load_4x3d(doublev4 *v0, doublev4 *v1, doublev4 *v2, void *st){
   *v1 = simd_vshff(t0, t1, 0x89);
   *v2 = simd_vshff(l2, t1, 0xcc);
 }
-static void test_4x3d(){
-  double a[12] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
-  doublev4 v0, v1, v2;
-  simd_load_4x3d(&v0, &v1, &v2, a);
-  simd_print_doublev4(v0);
-  simd_print_doublev4(v1);
-  simd_print_doublev4(v2);
+inline void simd_cpyo(void *dest, void *src, size_t len){
+  for (int i = 0; i < len; i += 128){
+    uint256 tmp0, tmp1, tmp2, tmp3;
+    simd_load(tmp0, src + i +  0);
+    simd_load(tmp1, src + i + 32);
+    simd_load(tmp2, src + i + 64);
+    simd_load(tmp3, src + i + 96);
+    
+    simd_store(tmp0, dest + i +  0);
+    simd_store(tmp1, dest + i + 32);
+    simd_store(tmp2, dest + i + 64);
+    simd_store(tmp3, dest + i + 96);
+  }
 }

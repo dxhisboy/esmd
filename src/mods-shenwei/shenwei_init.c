@@ -62,11 +62,11 @@ void shenwei_init(esmd_t *md){
         int kk = icell / (nlocal[0] * nlocal[1]);
         int jj = icell / nlocal[0] % nlocal[1];
         int ii = icell % nlocal[0];
-        for (int dx = -NCELL_CUT; dx <= 0; dx ++) {
-          int dytop = (dx == 0) ? 0 : NCELL_CUT;
-          for (int dy = -NCELL_CUT; dy <= dytop; dy ++) {
-            int dztop = (dx == 0 && dy == 0) ? 0 : NCELL_CUT;
-            for (int dz = -NCELL_CUT; dz <= dztop; dz ++) {
+	for (int dz = -NCELL_CUT; dz <= 0; dz ++) {
+	  int dytop = (dz == 0) ? 0 : NCELL_CUT;
+	  for (int dy = -NCELL_CUT; dy <= dytop; dy ++) {
+	    int dxtop = (dz == 0 && dy == 0) ? 0 : NCELL_CUT;
+	    for (int dx = -NCELL_CUT; dx <= dxtop; dx ++) {
               int celloff = get_cell_off(box, ii + dx, jj + dy, kk + dz);
               cell_t *cell = box->cells + celloff;
               if ((cell->pemask & ipemask) == 0) nupdate ++;
@@ -78,7 +78,7 @@ void shenwei_init(esmd_t *md){
       }
     }
   }
-  debug("%d %d %d %d %d\n", ncellsall, nupdate, swdata->count[0][0], swdata->count[0][1], swdata->count[0][2]);
+  //debug("%d %d %d %d %d\n", ncellsall, nupdate, swdata->count[0][0], swdata->count[0][1], swdata->count[0][2]);
   //mempool_init(&(swdata->fpool), sizeof(areal) * CELL_SIZE * 3, nupdate, "force pool");
   swdata->frep = esmd_malloc(sizeof(areal) * CELL_SIZE * 3 * nupdate, "force replicas");
   int rep_head = 0;
@@ -92,13 +92,47 @@ void shenwei_init(esmd_t *md){
   }
   //debug("%p %d\n", box->cells[5121].frep, box->cells[5121].nreplicas);
   swdata->nupdate = nupdate;
-}
-
-  void shenwei_destroy(){
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    if (rank == 0){
-      lwpf_report_summary(stdout, &conf);
+  int neigh0[NNEIGHBOR][3], neigh1[NNEIGHBOR][3];
+  for (int dz = -NCELL_CUT; dz <= 0; dz ++) {
+    int dytop = (dz == 0) ? 0 : NCELL_CUT;
+    for (int dy = -NCELL_CUT; dy <= dytop; dy ++) {
+      int dxtop = (dz == 0 && dy == 0) ? 0 : NCELL_CUT;
+      for (int dx = -NCELL_CUT; dx <= dxtop; dx ++) {
+	int off = dz * 9 + dy * 3 + dx + 13;
+	neigh0[off][0] = 0 + dx;
+	neigh0[off][1] = 0 + dy;
+	neigh0[off][2] = 0 + dz;
+	neigh1[off][0] = 1 + dx;
+	neigh1[off][1] = 0 + dy;
+	neigh1[off][2] = 0 + dz;
+      }
     }
   }
+  int *read_from = swdata->read_from, *store_to = swdata->store_to;
+  int rwoff = 0;
+  for (int i = 0; i < NNEIGHBOR; i ++) {
+    read_from[i] = -1;
+    store_to[i] = -1;
+  }
+  for (int i = 0; i < NNEIGHBOR; i ++) {
+    for (int j = 0; j < NNEIGHBOR; j ++){
+      if (neigh0[i][0] == neigh1[j][0] &&
+	  neigh0[i][1] == neigh1[j][1] &&
+	  neigh0[i][2] == neigh1[j][2]){
+	store_to[i] = rwoff;
+	read_from[j] = rwoff;
+	debug("delta %d %d, rwoff %d\n", i, j, rwoff);
+	rwoff ++;
+      }
+    }
+  }
+}
+
+void shenwei_destroy(){
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  if (rank == 0){
+    lwpf_report_summary(stdout, &conf);
+  }
+}
 #endif
