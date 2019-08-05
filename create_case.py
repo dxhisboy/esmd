@@ -55,7 +55,7 @@ try:
         logger.info("case.json exists, loading")
         case_vars.update(json.load(open(caseconf)))
     if args.platform:
-        case_vars['PLATFORM'] = 'openmpi_arch'
+        case_vars['PLATFORM'] = args.platform
     if args.user_cppdefs:
         case_vars['USER_CPPDEFS'] += args.user_cppdefs
     if not args.keep_root:

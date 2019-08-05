@@ -1,6 +1,6 @@
 #INCLUDES=-I/usr/include/libiberty
-#LIBS=-liberty
-CFLAGS=-O2 -std=gnu99 -finline-functions -Dinline="static inline" -OPT:IEEE_arith=2 -g
+LIBS=$(LINK_SPC) -L/home/export/online1/swmore/opensource/swlu/lib/ -lswlu_mpi -Wl,-wrap,memcpy
+CFLAGS=-O2 -std=gnu99 -finline-functions -Dinline="static inline" -OPT:IEEE_arith=2 -g -msimd -I/home/export/online1/swmore/opensource/swlu/include/
 CC=mpicc
 LD=mpicc
 SLAVE_CC=sw5cc -slave
