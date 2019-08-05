@@ -5,6 +5,8 @@
 //#include <hashtab.h>
 
 #include <data.h>
+//#define DEBUG_THIS_FILE
+#include <log.h>
 typedef struct memrec {
   char name[256];
   size_t size, cnt;
@@ -84,10 +86,11 @@ static void mr_print_trav(memrec_t *node, void *help){
 static void *esmd_aligned_malloc(size_t size){
   long raw = (long)malloc(size + sizeof(meminfo_t) + MEMORY_ALIGN_MASK);
   void *ret = (void*)((raw + sizeof(meminfo_t) + MEMORY_ALIGN_MASK) & ~MEMORY_ALIGN_MASK);
-  if (ret == NULL){
+  if (raw == 0){
     perror("Malloc failed");
     exit(1);
   }
+  debug("%p\n", ret);
   meminfo_t *info = ret - sizeof(meminfo_t);
   info->raw = (void*)raw;
   info->size = size;

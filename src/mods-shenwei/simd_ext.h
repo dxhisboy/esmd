@@ -88,12 +88,17 @@ inline void simd_3x4_back(doublev4 *v0, doublev4 *v1, doublev4 *v2, doublev4 a0,
         : "=&r"(t0), "=&r"(t1), "=&r"(v1), "=&r"(v0), "=&r"(v2) \
         : "r"(a0), "r"(a1), "r"(a2));                           \
   }
-//v0->t3, v1->t2, v2->t4
-    /* doublev4 t0 = simd_vshff(a2, a1, 0x44);             \ */
-    /* doublev4 t1 = simd_vshff(a2, a1, 0xee);             \ */
-    /* doublev4 t2 = simd_vshff(a1, a0, 0xee);             \ */
-    /* doublev4 t3 = simd_vshff(t0, a0, 0x84);             \ */
-    /* doublev4 t4 = simd_vshff(t2, a2, 0xde);             \ */
-    /* v0 = simd_vshff(t3, t3, 0x78);                     \ */
-    /* v1 = simd_vshff(t2, t0, 0x8d);                     \ */
-    /* v2 = simd_vshff(t1, t4, 0xd8);                     \ */
+
+#define transpose4x4_m(in0, in1, in2, in3, ot0, ot1, ot2, ot3) {        \
+    doublev4 t0, t1;                                                    \
+    asm("vshff %7, %6, 0x44, %2\n\t"                                    \
+        "vshff %7, %6, 0xee, %4\n\t"                                    \
+        "vshff %9, %8, 0x44, %3\n\t"                                    \
+        "vshff %9, %8, 0xee, %5\n\t"                                    \
+        "vshff %3, %2, 0x88, %0\n\t"                                    \
+        "vshff %3, %2, 0xdd, %1\n\t"                                    \
+        "vshff %5, %4, 0x88, %2\n\t"                                    \
+        "vshff %5, %4, 0xdd, %3\n\t"                                    \
+        : "=r"(ot0), "=r"(ot1), "=r"(ot2), "=r"(ot3), "=r"(t0), "=r"(t1) \
+        : "r"(in0), "r"(in1), "r"(in2), "r"(in3));                      \
+  }

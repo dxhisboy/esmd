@@ -7,7 +7,7 @@
 #define LWPF_UNITS U(PAIR_LJ)
 #undef inline
 #include <lwpf2/lwpf2.h>
-#define DEBUG_THIS_FILE
+//#define DEBUG_THIS_FILE
 #include <log.h>
 static inline void part1d(int n, int np, int pid, int *start, int *count){
   int pncell = n / np;

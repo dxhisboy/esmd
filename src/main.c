@@ -9,10 +9,25 @@
 #include <timer.h>
 #include <thermo.h>
 #include <lattice.h>
-#define DEBUG_THIS_FILE
+//#define DEBUG_THIS_FILE
 #include <log.h>
 #include <swlu.h>
+#include <stdlib.h>
 int main(int argc, char **argv){
+  int nx, ny, nz;
+  areal cut;
+  if (argc < 5){
+    puts("esmd <nx> <ny <nz> <cutoff>");
+    exit(1);
+  }
+  nx = atoi(argv[1]);
+  ny = atoi(argv[2]);
+  nz = atoi(argv[3]);
+  cut = atof(argv[4]);
+  int nt = 1000;
+  if (argc >= 6){
+    nt = atoi(argv[5]);
+  }
   esmd_t md;
   memory_init();
   md.box = esmd_malloc(sizeof(box_t), "box meta");
@@ -22,7 +37,7 @@ int main(int argc, char **argv){
   timer_init();
   esmd_mpi_init(&md);
   //esmd_pair_setup(&md, 2.5);
-  areal cutoff = 2.5;
+  areal cutoff = cut;
   ireal epsilon = 1.0;
   ireal sigma = 1.0;
   ireal mass = 1.0;
@@ -33,9 +48,9 @@ int main(int argc, char **argv){
   lat_conf->atom_types = NULL;
   lat_conf->type = LAT_FCC;
   lat_conf->dens = 0.8442;
-  lat_conf->nx = 80;
-  lat_conf->ny = 40;
-  lat_conf->nz = 40;
+  lat_conf->nx = nx;
+  lat_conf->ny = ny;
+  lat_conf->nz = nz;
   
   md.utype = UNIT_LJ;
 
@@ -71,7 +86,7 @@ int main(int argc, char **argv){
   /* swlu_prof_init(); */
   /* swlu_prof_start(); */
   //enable_memcpy_log();
-  for (int i = 0; i < 1000; i ++){
+  for (int i = 0; i < nt; i ++){
     timer_start("integrate");
     integrate(&md);
     timer_stop("integrate");

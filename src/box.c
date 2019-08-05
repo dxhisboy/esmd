@@ -137,18 +137,20 @@ void box_add_atom(box_t *box, areal *x, areal *v, ireal q, int type){
 
 void report_cell_info(esmd_t *md){
   box_t *box = md->box;
-  int nmax = 0, nmin = 0x7fffffff, nsum = 0;
+  int nmax = 0, nmin = 0x7fffffff;
+  long nsum = 0;
   ESMD_CELL_ITER(box, {
       if (cell->natoms > nmax) nmax = cell->natoms;
       if (cell->natoms < nmin) nmin = cell->natoms;
       nsum += cell->natoms;
     });
   
-  int gbl_nmax, gbl_nmin, gbl_nsum;
+  int gbl_nmax, gbl_nmin;
+  long gbl_nsum;
   MPI_Reduce(&nmax, &gbl_nmax, 1, MPI_INT, MPI_MAX, 0, md->mpp->comm);
   MPI_Reduce(&nmin, &gbl_nmin, 1, MPI_INT, MPI_MIN, 0, md->mpp->comm);
-  MPI_Reduce(&nsum, &gbl_nsum, 1, MPI_INT, MPI_SUM, 0, md->mpp->comm);
+  MPI_Reduce(&nsum, &gbl_nsum, 1, MPI_LONG_LONG, MPI_SUM, 0, md->mpp->comm);
   double avg = gbl_nsum * 1.0 / (box->nglobal[0] * box->nglobal[1] * box->nglobal[2]);
   master_info("#atoms/cell: avg=%f, min=%d, max=%d\n", avg, gbl_nmin, gbl_nmax);
-  master_info("total atoms: %d\n", gbl_nsum);
+  master_info("total atoms: %ld\n", gbl_nsum);
 }

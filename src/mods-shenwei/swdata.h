@@ -2,7 +2,8 @@
 #define SWDATA_H_
 #include <data.h>
 #define NCPE 64
-#define BLK 16
+#define BLK 8
+#define VEROFF 2
 
 #define __SW_CBC__(x) (x) * (x) * (x)
 #define NNEIGHBOR ((__SW_CBC__(NCELL_CUT * 2 + 1) - 1) / 2 + 1)

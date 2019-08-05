@@ -135,7 +135,7 @@ void esmd_create_atoms_by_lattice(esmd_t *md) {
   }
   areal vavg[3];
   esmd_global_sum_vec(md, vavg, vtot);
-  int natoms = lat->natoms * conf->nx * conf->ny * conf->nz;
+  long int natoms = lat->natoms * conf->nx * conf->ny * conf->nz;
   vavg[0] = vavg[0] / natoms;
   vavg[1] = vavg[1] / natoms;
   vavg[2] = vavg[2] / natoms;

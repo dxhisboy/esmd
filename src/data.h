@@ -120,7 +120,7 @@ enum lattice_type {
 typedef struct lattice {
   areal (*offset)[3];
   areal lx, ly, lz;
-  int natoms;
+  long int natoms;
 } lattice_t;
 
 typedef struct lattice_config {
@@ -151,7 +151,8 @@ typedef struct esmd {
   enum unit_type utype;
   accumulate_t accu_local, accu_global;
   thermo_t thermo;
-  int natoms, step, nthermo;
+  long natoms;
+  int step, nthermo;
   void *platformdata;
 } esmd_t;
 

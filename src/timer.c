@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
-#define DEBUG_THIS_FILE
+//#define DEBUG_THIS_FILE
 #include <log.h>
 inline long current_usec(){
   struct timeval tv;

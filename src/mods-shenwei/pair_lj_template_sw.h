@@ -327,17 +327,29 @@ static inline void CAT(pair_lj_force_b2b_neighbor, VER_CODE)(cell_t *self, cell_
     lwpf_stop(CONV);
 
   }
-  lwpf_start(CONV);
+  lwpf_start(FILL);
   for (int jidx = 0; jidx < jcnt; jidx ++){
     int j = jlist[jidx];
     simd_vsumd_m(fj_v4[jidx][0]);
     simd_vsumd_m(fj_v4[jidx][1]);
     simd_vsumd_m(fj_v4[jidx][2]);
+
     fj[j][0] += fj_v4[jidx][0];
     fj[j][1] += fj_v4[jidx][1];
     fj[j][2] += fj_v4[jidx][2];
   }
 
+  /* doublev4 *ffj_v4 = fj_v4[0]; */
+  /* doublev4 *ffj = (doublev4*)fj[0]; */
+  /* for (int j = 0; j < neigh->natoms * 3; j += 4){ */
+  /*   doublev4 v0 = ffj_v4[j + 0]; */
+  /*   doublev4 v1 = ffj_v4[j + 1]; */
+  /*   doublev4 v2 = ffj_v4[j + 2]; */
+  /*   doublev4 v3 = ffj_v4[j + 3]; */
+  /*   doublev4 tv0, tv1, tv2, tv3; */
+  /*   transpose4x4_m(v0, v1, v2, v3, tv0, tv1, tv2, tv3); */
+  /*   ffj[j >> 2] += tv0 + tv1 + tv2 + tv3; */
+  /* } */
   /* for (int j = 0; j < neigh->natoms; j ++){ */
   /*   simd_vsumd_m(fj_v4[j][0]); */
   /*   simd_vsumd_m(fj_v4[j][1]); */
@@ -346,7 +358,7 @@ static inline void CAT(pair_lj_force_b2b_neighbor, VER_CODE)(cell_t *self, cell_
   /*   fj[j][1] += fj_v4[j][1]; */
   /*   fj[j][2] += fj_v4[j][2]; */
   /* } */
-  lwpf_stop(CONV);
+  lwpf_stop(FILL);
   *evdwl += simd_vsumd(evdwl_v4 * 2);
   *virial += simd_vsumd(virial_v4);
   lwpf_stop(B2B);
@@ -447,23 +459,23 @@ void CAT(pair_lj_force_cpe, VER_CODE)(esmd_t *gl_md) {
             asm ("ctpop %1, %0\n\t" : "=r"(irep): "r"(lowerpe_mask & cell_neigh.pemask));
 	    areal (*gl_frep)[3] = cell_neigh.frep[0];
             int nj = cell_neigh.natoms;
-	    int roff = irep * (nj + 1);
+	    int roff = irep * (nj + VEROFF);
             //pe_get(gl_frep + roff, fj, nj * sizeof(areal) * 3);
 	    if (should_read && read_from[dn] != -1){
 	      simd_cpyo(xj, xj_cache[read_from[dn]], nj * sizeof(areal) * 3);
-	      simd_cpyo(fj, fj_cache[read_from[dn]], (nj + 1) * sizeof(areal) * 3);
+	      simd_cpyo(fj, fj_cache[read_from[dn]], (nj + VEROFF) * sizeof(areal) * 3);
 	      simd_cpyo(tj, tj_cache[read_from[dn]], nj * sizeof(int));
 	    } else {
-              pe_get(gl_frep + roff, fj, (nj + 1) * sizeof(areal) * 3);
+              pe_get(gl_frep + roff, fj, (nj + VEROFF) * sizeof(areal) * 3);
 	      pe_get(box.celldata[neigh_off].x, xj, nj * sizeof(areal) * 3);
               pe_get(box.celldata[neigh_off].type, tj, nj * sizeof(int));
 	    }
 	    //
             dma_syn();
-            long f_version = *(long*)fj[nj];
+            long f_version = *(long*)(fj[nj + VEROFF - 1] + 2);
             if (f_version != md.step) {
               simd_zfillo(fj, nj * sizeof(areal) * 3);
-              *(long*)&fj[nj][0] = md.step;
+              *(long*)&fj[nj + VEROFF - 1][2] = md.step;
             }
             lwpf_stop(RJ);
 	    if (self_interaction){
@@ -480,10 +492,10 @@ void CAT(pair_lj_force_cpe, VER_CODE)(esmd_t *gl_md) {
             lwpf_start(WJ);
 	    if (should_stor && store_to[dn] != -1){
 	      simd_cpyo(xj_cache[store_to[dn]], xj, sizeof(areal) * 3 * nj);
-              simd_cpyo(fj_cache[store_to[dn]], fj, sizeof(areal) * 3 * (nj + 1));
+              simd_cpyo(fj_cache[store_to[dn]], fj, sizeof(areal) * 3 * (nj + VEROFF));
 	      simd_cpyo(tj_cache[store_to[dn]], tj, sizeof(int) * nj);
 	    } else {
-              pe_put(gl_frep + roff, fj, sizeof(areal) * 3 * (nj + 1));
+              pe_put(gl_frep + roff, fj, sizeof(areal) * 3 * (nj + VEROFF));
             }
             dma_syn();
             lwpf_stop(WJ);
@@ -503,7 +515,7 @@ void CAT(pair_lj_force_cpe, VER_CODE)(esmd_t *gl_md) {
     dma_syn();
     areal (*gl_frep)[3] = cell.frep[0];
     for (int irep = 0; irep < cell.nreplicas; irep ++){
-      int roff = irep * (cell.natoms + 1);
+      int roff = irep * (cell.natoms + VEROFF);
       pe_get(gl_frep + roff, fj, cell.natoms * sizeof(areal) * 3);
       dma_syn();
 

@@ -43,12 +43,16 @@ inline size_t estimate_atoms_size(int fields){
   }
 
 void export_box_cpe(boxio_param_t *gl_pm){
+  athread_syn(ARRAY_SCOPE, 0xffff);
   dma_init();
   boxio_param_t pm;
   pe_get(gl_pm, &pm, sizeof(boxio_param_t));
   dma_syn();
+  if ((long)(gl_pm->box) >> 28 != 0x500){
+    printf("%p\n", gl_pm->box);
+  }
   box_t box;
-  pe_get(pm.box, &box, sizeof(box_t));
+  pe_get(gl_pm->box, &box, sizeof(box_t));
   dma_syn();
   char l_buf[BUF_SIZE];
   size_t l_offset = 0;
@@ -86,6 +90,9 @@ void export_box_cpe(boxio_param_t *gl_pm){
       export_void(box.cells + celloff, sizeof(cell_t));
       memcpy(&cell, l_buf + l_offset - sizeof(cell_t), sizeof(cell_t));
     } else {
+      if (celloff < 0 || celloff >= box.nall[0] * box.nall[1] * box.nall[2]){
+        cal_locked_printf("%d %d %d %d %d %d %d %d %d\n", ii, jj, kk, box.nall[0], box.nall[1], box.nall[2], box.olocal[0], box.olocal[1], box.olocal[2]);
+      }
       pe_get(box.cells + celloff, &cell, sizeof(cell_t));
       dma_syn();
     }
@@ -125,6 +132,7 @@ void export_box_cpe(boxio_param_t *gl_pm){
     pe_put(g_buf + g_offset, l_buf, l_offset);
     dma_syn();
   }
+  athread_syn(ARRAY_SCOPE, 0xffff);
 }
 
 /* #undef BUF_SIZE */
@@ -153,6 +161,7 @@ void export_box_cpe(boxio_param_t *gl_pm){
     }                                                                   \
   }
 void import_box_cpe(boxio_param_t *gl_pm){
+  athread_syn(ARRAY_SCOPE, 0xffff);
   dma_init();
   boxio_param_t pm;
   pe_get(gl_pm, &pm, sizeof(boxio_param_t));
@@ -184,6 +193,9 @@ void import_box_cpe(boxio_param_t *gl_pm){
     int jj = icell / xlen % ylen + ylo;
     int kk = icell / xlen / ylen + zlo;
     int celloff = get_cell_off((&box), ii, jj, kk);
+    if (celloff < 0 || celloff >= box.nall[0] * box.nall[1] * box.nall[2]){
+      cal_locked_printf("%d %d %d %d %d %d %d %d %d\n", ii, jj, kk, box.nall[0], box.nall[1], box.nall[2], box.olocal[0], box.olocal[1], box.olocal[2]);
+    }
     cell_t cell;
     pe_get(box.cells + celloff, &cell, sizeof(cell_t));
     dma_syn();
@@ -314,6 +326,7 @@ void import_box_cpe(boxio_param_t *gl_pm){
       if (fields & CELL_E) import_void(data->export + off, sizeof(int) * cnt);
     }
   }
+  athread_syn(ARRAY_SCOPE, 0xffff);
 }
 #endif
 
